@@ -1,0 +1,12 @@
+[Unit]
+Description=[team Team] Deploy System
+After=network.target
+
+[Service]
+User=ctf
+Group=ctf
+WorkingDirectory=/home/ctf/deploy
+ExecStart=/home/ctf/deploy/venv/bin/gunicorn -c gunicorn.config.py deploy:app
+
+[Install]
+WantedBy=multi-user.target
