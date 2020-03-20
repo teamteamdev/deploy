@@ -39,6 +39,10 @@ def deploy(folder, cmd):
 
 @app.route("/", methods=["POST"])
 def hook():
+    action = flask.request.headers.get("X-GitHub-Event", "")
+    if action != "push":
+        return "OK [skip event]", 200
+    
     signature = flask.request.headers.get("X-Hub-Signature", "")
 
     if not signature.startswith("sha1="):
