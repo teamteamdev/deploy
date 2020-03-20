@@ -11,7 +11,7 @@ import config
 app = flask.Flask(__name__)
 
 
-def run_command(command):
+def run_command(command, folder):
     return subprocess.run(
         command,
         check=True, cwd=folder, 
@@ -22,14 +22,14 @@ def run_command(command):
 
 def deploy(folder, cmd):
     try:
-        run_command(["git", "pull"])
+        run_command(["git", "pull"], folder)
 
         if cmd is not None:
-            run_command(["bash", "-c", cmd])
+            run_command(["bash", "-c", cmd], folder)
         elif os.path.exists(os.path.join(folder, "deploy.sh")):
-            run_command(["bash", "deploy.sh"])
+            run_command(["bash", "deploy.sh"], folder)
         else:
-            run_command(["docker-compose", "restart"])
+            run_command(["docker-compose", "restart"], folder)
     except subprocess.CalledProcessError as e:
         raise
         # TODO: notify
