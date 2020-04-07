@@ -50,8 +50,6 @@ def deploy(repository, branch, dir, cmd, timeout):
             else:
                 run_command(["git", "clone", f"git@github.com:{repository}", ".", "-b", branch], dir)
 
-            if timeout is None:
-                timeout = 120
             if cmd is not None:
                 run_command([cmd], dir, timeout)
             elif os.path.isfile(os.path.join(dir, "deploy.sh", timeout)):
@@ -74,12 +72,12 @@ def make_app(config_path):
         app.config.from_mapping(**yaml.load(f, Loader=yaml.FullLoader))
 
     secret = app.config["GITHUB_SECRET"].encode()
+    default_timeout = app.config.get("DEFAULT_TIMEOUT", 120)
     projects = {}
     for raw_project in app.config["PROJECTS"]:
         branches = projects.setdefault(raw_project["repo"].lower(), {})
         project = branches.setdefault(raw_project["branch"].lower(), {})
-        project["path"] = raw_project["path"]
-        project["cmd"] = raw_project.get("cmd")
+        project.update(raw_project)
 
     @app.route("/", methods=["POST"])
     def hook():
@@ -117,7 +115,7 @@ def make_app(config_path):
         except KeyError:
             return "OK [skip: no deploy action]"
 
-        deploy(repository, branch, project["path"], project.get("cmd"))
+        deploy(repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
         # TODO: notify about successful deployment
         return "OK"
 
