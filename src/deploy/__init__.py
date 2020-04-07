@@ -34,7 +34,7 @@ def run_command(command, dir):
 @contextmanager
 def lock_directory(dir):
     with open(os.path.join(dir, ".lock"), "w") as f:
-        fcntl.flock(f, flock.LOCK_EX)
+        fcntl.flock(f, fcntl.LOCK_EX)
         yield
 
 
