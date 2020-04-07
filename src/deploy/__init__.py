@@ -69,7 +69,7 @@ def make_app(config_path):
     with open(config_path) as f:
         app.config.from_mapping(**yaml.load(f, Loader=yaml.FullLoader))
 
-    secret = app.config["GITHUB_SECRET"]
+    secret = app.config["GITHUB_SECRET"].encode()
     projects = {}
     for raw_project in app.config["PROJECTS"]:
         branches = projects.setdefault(raw_project["repo"].lower(), {})
@@ -90,7 +90,7 @@ def make_app(config_path):
         if not hmac.compare_digest(
             signature,
             hmac.new(
-                config.Config["secret"].encode(),
+                secret,
                 flask.request.get_data(),
                 "sha1"
             ).hexdigest()
