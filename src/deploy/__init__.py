@@ -33,7 +33,9 @@ def run_command(command, dir):
 
 @contextmanager
 def lock_directory(dir):
-    with open(os.path.join(dir, ".lock"), "w") as f:
+    # We use lockfile in parent directory, otherwise git refuses to clone in non-empty directory.
+    parentdir, dirname = os.path.split(os.path.abspath(dir))
+    with open(os.path.join(parentdir, f".{dirname}-lock"), "w") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         yield
 
@@ -42,7 +44,7 @@ def deploy(repository, branch, dir, cmd):
     os.makedirs(dir, exist_ok=True)
     with lock_directory(dir):
         try:
-            if os.path.isdir(os.path.join(dir, ".git")):
+            if os.path.isdir(os.path.join(dir, "repo")):
                 run_command(["git", "fetch", "origin", branch], dir)
                 run_command(["git", "checkout", "-B", branch, f"origin/{branch}"], dir)
             else:
