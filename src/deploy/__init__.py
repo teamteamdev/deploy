@@ -23,11 +23,11 @@ def remove_prefix(prefix, str):
         return None
 
 
-def run_command(command, dir):
+def run_command(command, dir, timeout=120):
     return subprocess.run(
         command,
         check=True, cwd=dir,
-        timeout=60
+        timeout=timeout,
     )
 
 
@@ -40,7 +40,7 @@ def lock_directory(dir):
         yield
 
 
-def deploy(repository, branch, dir, cmd):
+def deploy(repository, branch, dir, cmd, timeout):
     os.makedirs(dir, exist_ok=True)
     with lock_directory(dir):
         try:
@@ -50,12 +50,14 @@ def deploy(repository, branch, dir, cmd):
             else:
                 run_command(["git", "clone", f"git@github.com:{repository}", ".", "-b", branch], dir)
 
+            if timeout is None:
+                timeout = 120
             if cmd is not None:
-                run_command([cmd], dir)
-            elif os.path.isfile(os.path.join(dir, "deploy.sh")):
+                run_command([cmd], dir, timeout)
+            elif os.path.isfile(os.path.join(dir, "deploy.sh", timeout)):
                 run_command(["./deploy.sh"], dir)
-            elif os.path.isfile(os.path.join(dir, "docker-compose.yml")):
-                run_command(["docker-compose", "restart"], dir)
+            elif os.path.isfile(os.path.join(dir, "docker-compose.yml", timeout)):
+                run_command(["docker-compose", "restart"], dir, timeout)
             else:
                 logger.error(f"No idea how to deploy project in directory {dir}")
         except subprocess.CalledProcessError as e:
