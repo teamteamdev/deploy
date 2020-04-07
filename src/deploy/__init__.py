@@ -5,9 +5,12 @@ import hmac
 import flask
 import os
 import sys
+import contextlib
 import subprocess
 import logging
 import yaml
+import fcntl
+from contextlib import contextmanager
 
 
 logger = logging.getLogger(__name__)
@@ -20,33 +23,45 @@ def remove_prefix(prefix, str):
         return None
 
 
-def run_command(command, folder):
+def run_command(command, dir):
     return subprocess.run(
         command,
-        check=True, cwd=folder, 
+        check=True, cwd=dir,
         timeout=60
     )
 
 
-def deploy(folder, cmd):
-    try:
-        run_command(["git", "fetch"], folder)
-        run_command(["git", "checkout", "-B", "master", "origin/master"], folder)
+@contextmanager
+def lock_directory(dir):
+    with open(os.path.join(dir, ".lock"), "w") as f:
+        fcntl.flock(f, flock.LOCK_EX)
+        yield
 
-        if cmd is not None:
-            run_command(["bash", "-c", cmd], folder)
-        elif os.path.exists(os.path.join(folder, "deploy.sh")):
-            run_command(["bash", "deploy.sh"], folder)
-        elif os.path.exists(os.path.join(folder, "docker-compose.yml")):
-            run_command(["docker-compose", "restart"], folder)
-        else:
-            logger.error(f"No idea how to deploy project in folder {folder}")
-    except subprocess.CalledProcessError as e:
-        raise
-        # TODO: notify
-    except subprocess.TimeoutExpired as e:
-        raise
-        # TODO: notify
+
+def deploy(repository, branch, dir, cmd):
+    os.makedirs(dir, exist_ok=True)
+    with lock_directory(dir):
+        try:
+            if os.path.isdir(os.path.join(dir, ".git")):
+                run_command(["git", "fetch", "origin", branch], dir)
+                run_command(["git", "checkout", "-B", branch, f"origin/{branch}"], dir)
+            else:
+                run_command(["git", "clone", f"git@github.com:{repository}", ".", "-b", branch], dir)
+
+            if cmd is not None:
+                run_command(["bash", "-c", cmd], dir)
+            elif os.path.isfile(os.path.join(dir, "deploy.sh")):
+                run_command(["bash", "deploy.sh"], dir)
+            elif os.path.isfile(os.path.join(dir, "docker-compose.yml")):
+                run_command(["docker-compose", "restart"], dir)
+            else:
+                logger.error(f"No idea how to deploy project in directory {dir}")
+        except subprocess.CalledProcessError as e:
+            raise
+            # TODO: notify
+        except subprocess.TimeoutExpired as e:
+            raise
+            # TODO: notify
 
 
 def make_app(config_path):
@@ -98,7 +113,7 @@ def make_app(config_path):
         except KeyError:
             return "OK [skip: no deploy action]"
 
-        deploy(project["path"], project.get("cmd"))
+        deploy(repository, branch, project["path"], project.get("cmd"))
         # TODO: notify about successful deployment
         return "OK"
 
