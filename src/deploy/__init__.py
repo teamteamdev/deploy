@@ -4,6 +4,7 @@
 import hmac
 import flask
 import os
+from threading import Thread
 import sys
 import contextlib
 import subprocess
@@ -64,6 +65,7 @@ def deploy(repository, branch, dir, cmd, timeout):
         except subprocess.TimeoutExpired as e:
             raise
             # TODO: notify
+    logger.info(f"Successfully deployed {repository}#{branch}")
 
 
 def make_app(config_path):
@@ -115,7 +117,10 @@ def make_app(config_path):
         except KeyError:
             return "OK [skip: no deploy action]"
 
-        deploy(repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
+        deploy_args = (repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
+        deploy_thread = Thread(target=deploy, args=deploy_args, daemon=True)
+        deploy_thread.start()
+
         # TODO: notify about successful deployment
         return "OK"
 
