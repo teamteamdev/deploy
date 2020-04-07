@@ -51,9 +51,9 @@ def deploy(repository, branch, dir, cmd):
                 run_command(["git", "clone", f"git@github.com:{repository}", ".", "-b", branch], dir)
 
             if cmd is not None:
-                run_command(["bash", "-c", cmd], dir)
+                run_command([cmd], dir)
             elif os.path.isfile(os.path.join(dir, "deploy.sh")):
-                run_command(["bash", "deploy.sh"], dir)
+                run_command(["./deploy.sh"], dir)
             elif os.path.isfile(os.path.join(dir, "docker-compose.yml")):
                 run_command(["docker-compose", "restart"], dir)
             else:
