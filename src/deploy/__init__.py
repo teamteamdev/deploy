@@ -44,7 +44,7 @@ def deploy(repository, branch, dir, cmd):
     os.makedirs(dir, exist_ok=True)
     with lock_directory(dir):
         try:
-            if os.path.isdir(os.path.join(dir, "repo")):
+            if os.path.isdir(os.path.join(dir, ".git")):
                 run_command(["git", "fetch", "origin", branch], dir)
                 run_command(["git", "checkout", "-B", branch, f"origin/{branch}"], dir)
             else:
