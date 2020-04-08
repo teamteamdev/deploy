@@ -118,7 +118,7 @@ def make_app(config_path):
             return "OK [skip: no deploy action]"
 
         deploy_args = (repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
-        deploy_process = Process(target=deploy, args=deploy_args, daemon=True)
+        deploy_process = Process(target=deploy, args=deploy_args)
         deploy_thread.start()
 
         # TODO: notify about successful deployment
