@@ -4,7 +4,7 @@
 import hmac
 import flask
 import os
-from threading import Thread
+from multiprocess import Process
 import sys
 import contextlib
 import subprocess
@@ -118,7 +118,7 @@ def make_app(config_path):
             return "OK [skip: no deploy action]"
 
         deploy_args = (repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
-        deploy_thread = Thread(target=deploy, args=deploy_args, daemon=True)
+        deploy_process = Process(target=deploy, args=deploy_args, daemon=True)
         deploy_thread.start()
 
         # TODO: notify about successful deployment
