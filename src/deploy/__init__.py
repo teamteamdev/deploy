@@ -4,7 +4,6 @@
 import hmac
 import flask
 import os
-from threading import Thread
 import sys
 import contextlib
 import subprocess
@@ -12,6 +11,8 @@ import logging
 import yaml
 import fcntl
 from contextlib import contextmanager
+
+from .after_response import AfterResponse
 
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,8 @@ def make_app(config_path):
     with open(config_path) as f:
         app.config.from_mapping(**yaml.load(f, Loader=yaml.FullLoader))
 
+    after_response = AfterResponse(app)
+
     secret = app.config["GITHUB_SECRET"].encode()
     default_timeout = app.config.get("DEFAULT_TIMEOUT", 120)
     projects = {}
@@ -117,11 +120,11 @@ def make_app(config_path):
         except KeyError:
             return "OK [skip: no deploy action]"
 
-        deploy_args = (repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
-        deploy_thread = Thread(target=deploy, args=deploy_args, daemon=True)
-        deploy_thread.start()
+        @after_response.once
+        def run_deploy():
+            deploy(repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
 
-        # TODO: notify about successful deployment
+        # TODO: notify about successfully scheduled deployment
         return "OK"
 
     return app
