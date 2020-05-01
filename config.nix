@@ -45,9 +45,9 @@ in {
           chdir = "/var/lib/${user}";
           uid = user;
           gid = "uwsgi";
-          enable-threads = true;
           logger = "syslog:deploy";
-          mount = "/=deploy.wsgi:app";
+          module = "deploy.wsgi";
+          callable = "app";
         };
       };
     };

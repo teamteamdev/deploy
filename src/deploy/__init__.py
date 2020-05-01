@@ -45,6 +45,7 @@ def lock_directory(dir):
 def deploy(repository, branch, dir, cmd, timeout):
     os.makedirs(dir, exist_ok=True)
     with lock_directory(dir):
+        logger.info(f"Deploying {repository}#{branch}")
         try:
             if os.path.isdir(os.path.join(dir, ".git")):
                 run_command(["git", "fetch", "origin", branch], dir)
@@ -70,6 +71,8 @@ def deploy(repository, branch, dir, cmd, timeout):
 
 
 def make_app(config_path):
+    logging.basicConfig(level=logging.INFO)
+
     app = flask.Flask(__name__)
     with open(config_path) as f:
         app.config.from_mapping(**yaml.load(f, Loader=yaml.FullLoader))
@@ -124,7 +127,6 @@ def make_app(config_path):
         def run_deploy():
             deploy(repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
 
-        # TODO: notify about successfully scheduled deployment
         return "OK"
 
     return app

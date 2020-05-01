@@ -13,18 +13,50 @@ def run_callback(cb):
         logger.error("Error in after response callback", exc_info=e)
 
 
+MAIN_AFTER_RESPONSE_SET = False
+
+
 class AfterResponse:
-    def __init__(self, app):
+    def __init__(self, app, is_main=True):
         self.callbacks = []
         self.local = Local()
 
-        old_app = app.wsgi_app
-        def new_wsgi_app(environ, after_response):
-            iterator = old_app(environ, after_response)
-            return ClosingIterator(iterator, [self._run])
-        app.wsgi_app = new_wsgi_app
+        if is_main:
+            global MAIN_AFTER_RESPONSE_SET
+            if MAIN_AFTER_RESPONSE_SET:
+                raise RuntimeError("Main AfterResponse hook has already been defined")
+
+            try:
+                import uwsgi
+                has_uwsgi = True
+            except ImportError:
+                has_uwsgi = False
+        else:
+            has_uwsgi = True
+
+        if has_uwsgi:
+            if hasattr(uwsgi, "after_req_hook"):
+                old_hook = uwsgi.after_req_hook
+                def combined_hook():
+                    self._run()
+                    old_hook()
+                uwsgi.after_req_hook = combined_hook
+            else:
+                uwsgi.after_req_hook = self._run
+
+            logger.info(f"uWSGI detected, using after_req_hook for AfterResponse, numproc {uwsgi.logsize()}")
+        else:
+            old_app = app.wsgi_app
+            def new_wsgi_app(environ, after_response):
+                iterator = old_app(environ, after_response)
+                return ClosingIterator(iterator, [self._run])
+            app.wsgi_app = new_wsgi_app
+
+        if is_main:
+            MAIN_AFTER_RESPONSE_SET = True
 
     def _run(self):
+        logger.info("Running after response hooks")
         if hasattr(self.local, "callbacks"):
             for cb in reversed(self.local.callbacks):
                 run_callback(cb)
