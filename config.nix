@@ -37,17 +37,16 @@ in {
     instance = {
       type = "emperor";
       vassals = {
-        deploy = {
-          type = "normal";
+        deploy = config.ugractf.commonUwsgiConfig // {
+          plugins = [ "python3" ];
           pythonPackages = pkgs: [ app ];
           env = [ "CONFIG=/var/lib/${user}/config.json" "PATH=${makeBinPath (with pkgs; [ git openssh bash ])}" "HOME=/var/lib/${user}" ];
           socket = uwsgiSock;
-          chmod-socket = 664;
           chdir = "/var/lib/${user}";
           uid = user;
           gid = "uwsgi";
           enable-threads = true;
-          manage-script-name = true;
+          logger = "syslog:deploy";
           mount = "/=deploy.wsgi:app";
         };
       };
