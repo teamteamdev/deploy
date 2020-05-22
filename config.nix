@@ -65,9 +65,9 @@ in {
       if [ ! -f /var/lib/${user}/.ssh/known_hosts ]; then
         ssh-keyscan github.com >/var/lib/${user}/.ssh/known_hosts 2>/dev/null
       fi
-      cp ${toString ../deploy-secrets/id_ed25519} /var/lib/${user}/.ssh/id_ed25519
+      cp ${toString ../deploy-secrets/id_rsa} /var/lib/${user}/.ssh/id_rsa
       chown -R ${user}:uwsgi /var/lib/${user}/.ssh
-      chmod 600 /var/lib/${user}/.ssh/id_ed25519
+      chmod 600 /var/lib/${user}/.ssh/id_rsa
     '';
   };
 
