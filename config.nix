@@ -40,7 +40,7 @@ in {
         deploy = config.ugractf.commonUwsgiConfig // {
           plugins = [ "python3" ];
           pythonPackages = pkgs: [ app ];
-          env = [ "CONFIG=/var/lib/${user}/config.json" "PATH=${makeBinPath (with pkgs; [ git openssh bash ])}" "HOME=/var/lib/${user}" ];
+          env = [ "CONFIG=/var/lib/${user}/config.json" "PATH=${makeBinPath (with pkgs; [ git git-lfs openssh bash ])}" "HOME=/var/lib/${user}" ];
           socket = uwsgiSock;
           chdir = "/var/lib/${user}";
           uid = user;

@@ -48,10 +48,12 @@ def deploy(repository, branch, dir, cmd, timeout):
         logger.info(f"Deploying {repository}#{branch}")
         try:
             if os.path.isdir(os.path.join(dir, ".git")):
-                run_command(["git", "fetch", "origin", branch], dir)
+                run_command(["git", "lfs", "fetch", "origin", branch], dir)
                 run_command(["git", "checkout", "-B", branch, f"origin/{branch}"], dir)
             else:
                 run_command(["git", "clone", f"git@github.com:{repository}", ".", "-b", branch], dir)
+                run_command(["git", "lfs", "install", "--local"], dir)
+                run_command(["git", "lfs", "pull"], dir)
 
             if cmd is not None:
                 run_command([cmd], dir, timeout)
