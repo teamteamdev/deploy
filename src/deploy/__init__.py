@@ -51,7 +51,7 @@ def deploy(repository, branch, dir, cmd, timeout):
                 run_command(["git", "fetch", "origin", branch], dir)
                 run_command(["git", "lfs", "fetch", "origin", branch], dir)
                 run_command(["git", "checkout", "-B", branch, f"origin/{branch}"], dir)
-                run_command(["git", "lfs", "checkout"])
+                run_command(["git", "lfs", "checkout"], dir)
             else:
                 run_command(["git", "clone", f"git@github.com:{repository}", ".", "-b", branch], dir)
                 run_command(["git", "lfs", "install", "--local"], dir)
