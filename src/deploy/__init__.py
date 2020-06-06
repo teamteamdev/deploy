@@ -44,18 +44,19 @@ def lock_directory(dir):
 
 def deploy(repository, branch, dir, cmd, timeout):
     os.makedirs(dir, exist_ok=True)
+    full_branch = f"refs/heads/{branch}"
     with lock_directory(dir):
         logger.info(f"Deploying {repository}#{branch}")
         try:
             if os.path.isdir(os.path.join(dir, ".git")):
-                run_command(["git", "fetch", "origin", branch], dir)
-                run_command(["git", "lfs", "fetch", "origin", branch], dir)
+                run_command(["git", "fetch", "origin", full_branch], dir)
+                run_command(["git", "lfs", "fetch", "origin", full_branch], dir)
                 run_command(["git", "checkout", "-B", branch, f"origin/{branch}"], dir)
                 run_command(["git", "lfs", "checkout"], dir)
             else:
                 run_command(["git", "clone", f"git@github.com:{repository}", ".", "-b", branch], dir)
                 run_command(["git", "lfs", "install", "--local"], dir)
-                run_command(["git", "lfs", "fetch", "origin", branch], dir)
+                run_command(["git", "lfs", "fetch", "origin", full_branch], dir)
                 run_command(["git", "lfs", "checkout"], dir)
 
             if cmd is not None:
