@@ -72,6 +72,7 @@ in {
   };
 
   users.extraUsers.${user} = {
+    isSystemUser = true;
     group = "uwsgi";
     createHome = true;
     home = "/var/lib/${user}";
