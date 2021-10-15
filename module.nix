@@ -69,7 +69,7 @@ in {
 
       projects = mkOption {
         type = types.attrsOf (types.submodule projectOpts);
-        default = [];
+        default = {};
         description = "Deployed projects configuration.";
       };
     };
