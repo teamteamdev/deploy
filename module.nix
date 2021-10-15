@@ -38,13 +38,13 @@ let
       timeout = mkOption {
         type = types.int;
         description = "Build timeout.";
-        default = 300;
+        default = 120;
       };
 
       script = mkOption {
         type = types.lines;
         description = "Script to execute.";
-        default = 300;
+        default = "";
       };
     };
   };

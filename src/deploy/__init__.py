@@ -28,7 +28,8 @@ def remove_prefix(prefix, str):
 def run_command(command, dir, timeout=120):
     return subprocess.run(
         command,
-        check=True, cwd=dir,
+        check=True,
+        cwd=dir,
         timeout=timeout,
     )
 
