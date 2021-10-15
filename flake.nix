@@ -12,7 +12,7 @@
 
     nixosModules = nix-common.nixosModules ++ [
       ({ pkgs, ... }: {
-        #nixpkgs.overlays = [ self.overlay ];
+        nixpkgs.overlays = [ self.overlay ];
       })
       (import ./module.nix)
     ];
