@@ -12,6 +12,9 @@
 
     nixosModules = nix-common.nixosModules ++ [
       (import ./module.nix)
+      ({ pkgs, ... }: {
+        nixpkgs.overlays = [ self.overlay ];
+      })
     ];
   } // flake-utils.lib.eachDefaultSystem (system:
     let
