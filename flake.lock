@@ -15,21 +15,6 @@
         "type": "github"
       }
     },
-    "nix-common": {
-      "locked": {
-        "lastModified": 1634311362,
-        "narHash": "sha256-kErI+BwDlzGrsKjc4fiX9iN+aiIjv6YkTEMjvBEjYZY=",
-        "ref": "master",
-        "rev": "b23a65731e4f89e1af05672f9eb040709c86441d",
-        "revCount": 4,
-        "type": "git",
-        "url": "ssh://git@github.com/teamteamdev/nix-common"
-      },
-      "original": {
-        "type": "git",
-        "url": "ssh://git@github.com/teamteamdev/nix-common"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1634316176,
@@ -49,7 +34,6 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nix-common": "nix-common",
         "nixpkgs": "nixpkgs"
       }
     }

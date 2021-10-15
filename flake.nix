@@ -1,16 +1,15 @@
 {
   inputs = {
     nixpkgs.url = "github:abbradar/nixpkgs/ugractf";
-    nix-common.url = "git+ssh://git@github.com/teamteamdev/nix-common";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, nix-common, flake-utils }: {
+  outputs = { self, nixpkgs, flake-utils }: {
     overlay = self: super: {
       deploy-bot = import ./shell.nix { pkgs = self; };
     };
 
-    nixosModules = nix-common.nixosModules ++ [
+    nixosModules = [
       ({ pkgs, ... }: {
         nixpkgs.overlays = [ self.overlay ];
       })
