@@ -13,7 +13,7 @@ let
       inherit (project) repo branch timeout;
       inherit path;
       cmd = pkgs.writeScript "deploy.sh" ''
-        #!$(pkgs.stdenv.shell} -e
+        #!${pkgs.stdenv.shell} -e
         ${project.script}
       '';
     }) cfg.projects;
