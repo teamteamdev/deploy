@@ -10,7 +10,7 @@
       deploy-bot = import ./shell.nix { pkgs = self; };
     };
 
-    nixosModules = [
+    nixosModules = nix-common.nixosModules ++ [
       (import ./module.nix)
     ];
   } // flake-utils.lib.eachDefaultSystem (system:
