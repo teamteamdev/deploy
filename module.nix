@@ -19,6 +19,8 @@ let
     }) cfg.projects;
   };
 
+  configFile = pkgs.writeText "config.json" (builtins.toJSON deployConfig);
+
   projectOpts = {
     options = {
       repo = mkOption {
@@ -112,6 +114,8 @@ in {
       };
     };
 
+    systemd.services.uwsgi.restartTriggers = [ configFile ];
+
     systemd.services."prepare-${user}" = {
       wantedBy = [ "multi-user.target" ];
       before = [ "uwsgi.service" ];
@@ -119,7 +123,7 @@ in {
       path = [ pkgs.openssh ];
       script = ''
         secret="$(cat ${cfg.gitHubSecretFile})"
-        sed "s,REPLACE_BY_GITHUB_SECRET,$secret," ${pkgs.writeText "config.json" (builtins.toJSON deployConfig)} > /var/lib/${user}/config.json
+        sed "s,REPLACE_BY_GITHUB_SECRET,$secret," ${configFile} > /var/lib/${user}/config.json
         mkdir -p /var/lib/${user}/.ssh
         if [ ! -f /var/lib/${user}/.ssh/known_hosts ]; then
           ssh-keyscan github.com >/var/lib/${user}/.ssh/known_hosts 2>/dev/null
