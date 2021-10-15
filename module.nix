@@ -1,5 +1,3 @@
-{ domain, projects ? {}, ... }:
-
 { config, pkgs, lib, ... }:
 
 with lib;
