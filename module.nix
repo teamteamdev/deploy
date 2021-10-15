@@ -65,8 +65,9 @@ in {
       };
 
       domain = mkOption {
-        type = types.str;
-        description = "Domain name.";
+        type = types.nullOr types.str;
+        default = null;
+        description = "Domain name. Nginx is not used if null.";
       };
 
       projects = mkOption {
@@ -78,7 +79,7 @@ in {
   };
 
   config = mkIf cfg.enable {
-    services.nginx = {
+    services.nginx = mkIf (cfg.domain != null) {
       enable = true;
       virtualHosts."${cfg.domain}" = {
         forceSSL = true;
