@@ -61,9 +61,9 @@ def deploy(repository, branch, dir, cmd, timeout):
 
             if cmd is not None:
                 run_command([cmd], dir, timeout)
-            elif os.path.isfile(os.path.join(dir, "deploy.sh", timeout)):
-                run_command(["./deploy.sh"], dir)
-            elif os.path.isfile(os.path.join(dir, "docker-compose.yml", timeout)):
+            elif os.path.isfile(os.path.join(dir, "deploy.sh")):
+                run_command(["./deploy.sh"], dir, timeout)
+            elif os.path.isfile(os.path.join(dir, "docker-compose.yml")):
                 run_command(["docker-compose", "restart"], dir, timeout)
             else:
                 logger.error(f"No idea how to deploy project in directory {dir}")

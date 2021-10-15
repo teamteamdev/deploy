@@ -12,7 +12,7 @@ let
     PROJECTS = mapAttrsToList (path: project: {
       inherit (project) repo branch timeout;
       inherit path;
-      script = pkgs.writeScript "deploy.sh" ''
+      cmd = pkgs.writeScript "deploy.sh" ''
         #!$(pkgs.stdenv.shell} -e
         ${project.script}
       '';
