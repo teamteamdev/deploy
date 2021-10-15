@@ -1,0 +1,59 @@
+{
+  "nodes": {
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1631561581,
+        "narHash": "sha256-3VQMV5zvxaVLvqqUrNz3iJelLw30mIVSfZmAaauM3dA=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "7e5bf3925f6fbdfaf50a2a7ca0be2879c4261d19",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "nix-common": {
+      "locked": {
+        "lastModified": 1634311362,
+        "narHash": "sha256-kErI+BwDlzGrsKjc4fiX9iN+aiIjv6YkTEMjvBEjYZY=",
+        "ref": "master",
+        "rev": "b23a65731e4f89e1af05672f9eb040709c86441d",
+        "revCount": 4,
+        "type": "git",
+        "url": "ssh://git@github.com/teamteamdev/nix-common"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/teamteamdev/nix-common"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1634298845,
+        "narHash": "sha256-UBiIjXLbxwhXnpkxyFHod8bCKjF0mmjQMbOpZQSkwa0=",
+        "owner": "abbradar",
+        "repo": "nixpkgs",
+        "rev": "84974de0a9ef40dfa5896a9ccd9f82a709add05e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "abbradar",
+        "ref": "ugractf",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nix-common": "nix-common",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
