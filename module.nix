@@ -98,7 +98,7 @@ in {
         vassals = {
           deploy = config.teamteam.commonUwsgiConfig // {
             plugins = [ "python3" ];
-            pythonPackages = pkgs: [ pkgs.deploy-bot ];
+            pythonPackages = _: [ pkgs.deploy-bot ];
             env = [ "CONFIG=/var/lib/${user}/config.json" "PATH=${makeBinPath (with pkgs; [ git git-lfs openssh bash ])}" "HOME=/var/lib/${user}" ];
             socket = uwsgiSock;
             chdir = "/var/lib/${user}";
