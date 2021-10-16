@@ -125,7 +125,7 @@ in {
 
     systemd.services.uwsgi.restartTriggers = [ configFile ];
 
-    systemd.services."prepare-${user}" = {
+    systemd.services."${user}-prepare" = {
       wantedBy = [ "multi-user.target" ];
       before = [ "uwsgi.service" ];
       serviceConfig.Type = "oneshot";
