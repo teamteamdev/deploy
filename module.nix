@@ -121,7 +121,7 @@ in {
       };
     };
 
-    services.podman.enable = mkIf cfg.podman true;
+    virtualisation.podman.enable = mkIf cfg.podman true;
 
     systemd.services.uwsgi.restartTriggers = [ configFile ];
 
