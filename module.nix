@@ -129,7 +129,7 @@ in {
       wantedBy = [ "multi-user.target" ];
       before = [ "uwsgi.service" ];
       serviceConfig.Type = "oneshot";
-      path = [ pkgs.openssh ];
+      path = [ pkgs.openssh ] ++ optional cfg.podman config.systemd.package;
       script = ''
         secret="$(cat ${cfg.gitHubSecretFile})"
         sed "s,REPLACE_BY_GITHUB_SECRET,$secret," ${configFile} > /var/lib/${user}/config.json
@@ -140,7 +140,7 @@ in {
         cp ${cfg.privateKeyFile} /var/lib/${user}/.ssh/id_rsa
         chown -R ${user}:uwsgi /var/lib/${user}/.ssh
         chmod 600 /var/lib/${user}/.ssh/id_rsa
-        ${optionalString cfg.podman "${config.systemd.package}/bin/loginctl enable-linger ${user}"}
+        ${optionalString cfg.podman "loginctl enable-linger ${user}"}
       '';
     };
 
