@@ -54,6 +54,12 @@ in {
     teamteam.deploy-bot = {
       enable = mkEnableOption "deploy bot";
 
+      podman = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable Podman support.";
+      };
+
       privateKeyFile = mkOption {
         type = types.path;
         description = "Path to private key file.";
@@ -115,6 +121,8 @@ in {
       };
     };
 
+    services.podman.enable = mkIf cfg.podman true;
+
     systemd.services.uwsgi.restartTriggers = [ configFile ];
 
     systemd.services."prepare-${user}" = {
@@ -132,6 +140,7 @@ in {
         cp ${cfg.privateKeyFile} /var/lib/${user}/.ssh/id_rsa
         chown -R ${user}:uwsgi /var/lib/${user}/.ssh
         chmod 600 /var/lib/${user}/.ssh/id_rsa
+        ${optionalString cfg.podman "${config.systemd.package}/bin/loginctl enable-linger ${user}"}
       '';
     };
 
@@ -140,6 +149,9 @@ in {
       group = "uwsgi";
       createHome = true;
       home = "/var/lib/${user}";
+    } // optionalAttrs cfg.podman {
+      subUidRanges = [{ startUid = 100000; count = 65536; }];
+      subGidRanges = [{ startGid = 100000; count = 65536; }];
     };
   };
 }
