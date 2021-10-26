@@ -23,7 +23,7 @@ let
 
   binPkgs = with pkgs;
     [ git git-lfs openssh bash ]
-    ++ optionals cfg.podman [ "/run/wrappers" podman ]
+    ++ optional cfg.docker pkgs.docker
     ++ cfg.path;
 
   projectOpts = {
@@ -59,10 +59,10 @@ in {
     teamteam.deploy-bot = {
       enable = mkEnableOption "deploy bot";
 
-      podman = mkOption {
+      docker = mkOption {
         type = types.bool;
         default = true;
-        description = "Enable Podman support.";
+        description = "Enable Docker support.";
       };
 
       privateKeyFile = mkOption {
@@ -132,7 +132,7 @@ in {
       };
     };
 
-    virtualisation.podman.enable = mkIf cfg.podman true;
+    virtualisation.docker.enable = mkIf cfg.docker true;
 
     systemd.services.uwsgi.restartTriggers = [ configFile ];
 
@@ -140,7 +140,7 @@ in {
       wantedBy = [ "multi-user.target" ];
       before = [ "uwsgi.service" ];
       serviceConfig.Type = "oneshot";
-      path = [ pkgs.openssh ] ++ optional cfg.podman config.systemd.package;
+      path = [ pkgs.openssh ];
       script = ''
         secret="$(cat ${cfg.gitHubSecretFile})"
         sed "s,REPLACE_BY_GITHUB_SECRET,$secret," ${configFile} > /var/lib/${user}/config.json
@@ -151,7 +151,6 @@ in {
         cp ${cfg.privateKeyFile} /var/lib/${user}/.ssh/id_rsa
         chown -R ${user}:uwsgi /var/lib/${user}/.ssh
         chmod 600 /var/lib/${user}/.ssh/id_rsa
-        ${optionalString cfg.podman "loginctl enable-linger ${user}"}
       '';
     };
 
@@ -160,9 +159,6 @@ in {
       group = "uwsgi";
       createHome = true;
       home = "/var/lib/${user}";
-    } // optionalAttrs cfg.podman {
-      subUidRanges = [{ startUid = 100000; count = 65536; }];
-      subGidRanges = [{ startGid = 100000; count = 65536; }];
     };
   };
 }
