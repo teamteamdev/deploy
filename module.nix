@@ -159,6 +159,7 @@ in {
       group = "uwsgi";
       createHome = true;
       home = "/var/lib/${user}";
+      extraGroups = optional cfg.docker "docker";
     };
   };
 }
