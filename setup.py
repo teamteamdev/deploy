@@ -4,18 +4,18 @@ from setuptools import setup
 
 
 setup(
-    name="deploy",
+    name="deploy_bot",
     description="[team Team] Deploy System",
     version="1.0",
     package_dir={"": "src"},
-    packages=["deploy"],
+    packages=["deploy_bot"],
     install_requires=[
         "flask",
         "pyyaml",
     ],
     entry_points={
         "console_scripts": [
-            "deploy=deploy:main"
+            "deploy_bot=deploy_bot:main"
         ]
     },
 )

@@ -4,7 +4,7 @@
 }:
 
 buildPythonPackage {
-  name = "deploy";
+  name = "deploy_bot";
 
   src = ./.;
 

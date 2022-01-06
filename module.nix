@@ -3,9 +3,7 @@
 with lib;
 
 let
-  cfg = config.teamteam.deploy-bot;
-  uwsgiSock = "/run/uwsgi/deploy.sock";
-  user = "deploy";
+  cfg = config.services.deploy-bot;
 
   deployConfig = {
     GITHUB_SECRET = "REPLACE_BY_GITHUB_SECRET";
@@ -20,6 +18,8 @@ let
   };
 
   configFile = pkgs.writeText "config.json" (builtins.toJSON deployConfig);
+
+  gunicornPkg = pkgs.python3.withPackages (ps: [ pkgs.deploy-bot ps.gunicorn ]);
 
   binPkgs = with pkgs;
     [ git git-lfs openssh bash ]
@@ -56,7 +56,7 @@ let
 
 in {
   options = {
-    teamteam.deploy-bot = {
+    services.deploy-bot = {
       enable = mkEnableOption "deploy bot";
 
       docker = mkOption {
@@ -101,65 +101,58 @@ in {
       virtualHosts."${cfg.domain}" = {
         forceSSL = true;
         enableACME = true;
-        locations = {
-          "/".extraConfig = ''
-            uwsgi_pass unix:${uwsgiSock};
-            include ${pkgs.nginx}/conf/uwsgi_params;
-          '';
-        };
+        locations."/".proxyPass = "http://unix:/run/deploy-bot/http.sock";
       };
     };
   
-    services.uwsgi = {
-      enable = true;
-      plugins = [ "python3" ];
-      instance = {
-        type = "emperor";
-        vassals = {
-          deploy = config.teamteam.commonUwsgiConfig // {
-            plugins = [ "python3" ];
-            pythonPackages = _: [ pkgs.deploy-bot ];
-            env = [ "CONFIG=/var/lib/${user}/config.json" "PATH=${makeBinPath binPkgs}" "HOME=/var/lib/${user}" ];
-            socket = uwsgiSock;
-            chdir = "/var/lib/${user}";
-            uid = user;
-            gid = "uwsgi";
-            logger = "syslog:deploy";
-            module = "deploy.wsgi";
-            callable = "app";
-          };
-        };
-      };
-    };
-
     virtualisation.docker.enable = mkIf cfg.docker true;
 
-    systemd.services.uwsgi.restartTriggers = [ configFile ];
-
-    systemd.services."${user}-prepare" = {
+    systemd.services."deploy-bot" = {
+      description = "deploy-bot web service.";
       wantedBy = [ "multi-user.target" ];
-      before = [ "uwsgi.service" ];
+      path = [ gunicornPkg pkgs.coreutils ] ++ binPkgs;
+      environment = {
+        "CONFIG" = "/var/lib/deploy-bot/config.json";
+        "NIX_PATH" = concatStringsSep ":" config.nix.nixPath;
+      };
+      serviceConfig = {
+        User = "deploy-bot";
+        Group = "deploy-bot";
+        RuntimeDirectory = "deploy-bot";
+        StateDirectory = "deploy-bot";
+        WorkingDirectory = "/var/lib/deploy-bot";
+      };
+      script = ''
+        exec gunicorn -n deploy-bot -w $(nproc) -b unix:/run/deploy-bot/http.sock deploy_bot.wsgi:app
+      '';
+    };
+
+    systemd.services."deploy-bot-prepare" = {
+      description = "Prepare state directory for deploy-bot.";
+      wantedBy = [ "multi-user.target" ];
       serviceConfig.Type = "oneshot";
       path = [ pkgs.openssh ];
       script = ''
         secret="$(cat ${cfg.gitHubSecretFile})"
-        sed "s,REPLACE_BY_GITHUB_SECRET,$secret," ${configFile} > /var/lib/${user}/config.json
-        mkdir -p /var/lib/${user}/.ssh
-        if [ ! -f /var/lib/${user}/.ssh/known_hosts ]; then
-          ssh-keyscan github.com >/var/lib/${user}/.ssh/known_hosts 2>/dev/null
+        sed "s,REPLACE_BY_GITHUB_SECRET,$secret," ${configFile} > /var/lib/deploy-bot/config.json
+        mkdir -p /var/lib/deploy-bot/.ssh
+        if [ ! -f /var/lib/deploy-bot/.ssh/known_hosts ]; then
+          ssh-keyscan github.com >/var/lib/deploy-bot/.ssh/known_hosts 2>/dev/null
         fi
-        cp ${cfg.privateKeyFile} /var/lib/${user}/.ssh/id_rsa
-        chown -R ${user}:uwsgi /var/lib/${user}/.ssh
-        chmod 600 /var/lib/${user}/.ssh/id_rsa
+        cp ${cfg.privateKeyFile} /var/lib/deploy-bot/.ssh/id_rsa
+        chown -R deploy-bot:deploy-bot /var/lib/deploy-bot/.ssh
+        chmod 600 /var/lib/deploy-bot/.ssh/id_rsa
       '';
     };
 
-    users.extraUsers.${user} = {
+    users.extraUsers.deploy-bot = {
       isSystemUser = true;
-      group = "uwsgi";
+      group = "deploy-bot";
       createHome = true;
-      home = "/var/lib/${user}";
+      home = "/var/lib/deploy-bot";
       extraGroups = optional cfg.docker "docker";
     };
+
+    users.extraGroups.deploy-bot = {};
   };
 }

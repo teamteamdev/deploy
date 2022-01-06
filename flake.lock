@@ -2,11 +2,11 @@
   "nodes": {
     "flake-utils": {
       "locked": {
-        "lastModified": 1631561581,
-        "narHash": "sha256-3VQMV5zvxaVLvqqUrNz3iJelLw30mIVSfZmAaauM3dA=",
+        "lastModified": 1638122382,
+        "narHash": "sha256-sQzZzAbvKEqN9s0bzWuYmRaA03v40gaJ4+iL1LXjaeI=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "7e5bf3925f6fbdfaf50a2a7ca0be2879c4261d19",
+        "rev": "74f7e4319258e287b0f9cb95426c9853b282730b",
         "type": "github"
       },
       "original": {
@@ -17,16 +17,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1634316176,
-        "narHash": "sha256-r6XfgZIXP6PuySqDUOHvnP2B7dmK4L+16vhlpwVlc4I=",
+        "lastModified": 1641382566,
+        "narHash": "sha256-ZrWS0fJ8c67HOPI2Axb98UiKEYz2Bp3xCoJI4P/h+Yw=",
         "owner": "abbradar",
         "repo": "nixpkgs",
-        "rev": "c7a8645764787744f0447572cd54f1fea020d6d6",
+        "rev": "c5eff58996ce11e3766f9b0eba025fd53b7a9283",
         "type": "github"
       },
       "original": {
         "owner": "abbradar",
-        "ref": "ugractf",
+        "ref": "ugractf-new",
         "repo": "nixpkgs",
         "type": "github"
       }
