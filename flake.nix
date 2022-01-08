@@ -13,7 +13,7 @@
       ({ pkgs, ... }: {
         nixpkgs.overlays = [ self.overlay ];
       })
-      (import ./module.nix)
+      ./module.nix
     ];
   } // flake-utils.lib.eachDefaultSystem (system:
     let
