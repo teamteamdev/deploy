@@ -120,28 +120,24 @@ in {
         Group = "deploy-bot";
         RuntimeDirectory = "deploy-bot";
         StateDirectory = "deploy-bot";
+        StateDirectoryMode = "0700";
         WorkingDirectory = "/var/lib/deploy-bot";
+        LoadCredential = [
+          "secret:${cfg.gitHubSecretFile}"
+          "ssh:${cfg.privateKeyFile}"
+        ];
       };
       script = ''
-        exec gunicorn -n deploy-bot -w $(nproc) -b unix:/run/deploy-bot/http.sock deploy_bot.wsgi:app
-      '';
-    };
-
-    systemd.services."deploy-bot-prepare" = {
-      description = "Prepare state directory for deploy-bot.";
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig.Type = "oneshot";
-      path = [ pkgs.openssh ];
-      script = ''
-        secret="$(cat ${cfg.gitHubSecretFile})"
-        sed "s,REPLACE_BY_GITHUB_SECRET,$secret," ${configFile} > /var/lib/deploy-bot/config.json
-        mkdir -p /var/lib/deploy-bot/.ssh
-        if [ ! -f /var/lib/deploy-bot/.ssh/known_hosts ]; then
-          ssh-keyscan github.com >/var/lib/deploy-bot/.ssh/known_hosts 2>/dev/null
+        sed \
+          "s,REPLACE_BY_GITHUB_SECRET,$(cat "$CREDENTIALS_DIRECTORY/secret"),g" \
+          \${configFile} > config.json
+        mkdir -p .ssh
+        if [ ! -f .ssh/known_hosts ]; then
+          ssh-keyscan github.com >.ssh/known_hosts 2>/dev/null
         fi
-        cp ${cfg.privateKeyFile} /var/lib/deploy-bot/.ssh/id_rsa
-        chown -R deploy-bot:deploy-bot /var/lib/deploy-bot/.ssh
-        chmod 600 /var/lib/deploy-bot/.ssh/id_rsa
+        cp -f "$CREDENTIALS_DIRECTORY/ssh" .ssh/id_rsa
+
+        exec gunicorn -n deploy-bot -w "$(nproc)" -b unix:/run/deploy-bot/http.sock deploy_bot.wsgi:app
       '';
     };
 
