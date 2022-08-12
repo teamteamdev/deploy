@@ -110,7 +110,7 @@ in {
     systemd.services."deploy-bot" = {
       description = "deploy-bot web service.";
       wantedBy = [ "multi-user.target" ];
-      path = [ gunicornPkg pkgs.coreutils ] ++ binPkgs;
+      path = [ gunicornPkg pkgs.coreutils pkgs.openssh ] ++ binPkgs;
       environment = {
         "CONFIG" = "/var/lib/deploy-bot/config.json";
         "NIX_PATH" = concatStringsSep ":" config.nix.nixPath;
