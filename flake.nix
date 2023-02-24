@@ -6,7 +6,7 @@
 
   outputs = { self, nixpkgs, flake-utils }: {
     overlays.default = final: prev: {
-      deploy-bot = import ./shell.nix { pkgs = self; };
+      deploy-bot = final.python3.pkgs.callPackage ./. { };
     };
 
     nixosModules.default.imports = [
@@ -17,12 +17,11 @@
     ];
   } // flake-utils.lib.eachDefaultSystem (system:
     let
-       pkgs = import nixpkgs { inherit system; };
-       pkg = import ./shell.nix { inherit pkgs; };
+       pkgs = import nixpkgs {
+         inherit system;
+         overlays = [ self.overlays.default ];
+        };
     in {
-      devShells.default = nixpkgs.lib.overrideDerivation pkg (drv: {
-        NIX_PATH = "nixpkgs=${nixpkgs}";
-      });
-      packages.default = pkg;
+      packages.default = pkgs.deploy-bot;
     });
 }
