@@ -5,13 +5,13 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }: {
-    overlay = self: super: {
+    overlays.default = final: prev: {
       deploy-bot = import ./shell.nix { pkgs = self; };
     };
 
-    nixosModules = [
+    nixosModules.default.imports = [
       ({ pkgs, ... }: {
-        nixpkgs.overlays = [ self.overlay ];
+        nixpkgs.overlays = [ self.overlays.default ];
       })
       ./module.nix
     ];
@@ -20,9 +20,9 @@
        pkgs = import nixpkgs { inherit system; };
        pkg = import ./shell.nix { inherit pkgs; };
     in {
-      devShell = nixpkgs.lib.overrideDerivation pkg (drv: {
+      devShells.default = nixpkgs.lib.overrideDerivation pkg (drv: {
         NIX_PATH = "nixpkgs=${nixpkgs}";
       });
-      defaultPackage = pkg;
+      packages.default = pkg;
     });
 }
