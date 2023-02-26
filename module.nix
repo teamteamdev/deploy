@@ -19,9 +19,11 @@ let
 
   configFile = pkgs.writeText "config.json" (builtins.toJSON deployConfig);
 
-  gunicornPkg = (pkgs.deploy-bot.overridePythonAttrs (self: {
-    propagatedBuildInputs = self.propagatedBuildInputs or [] ++ [pkgs.deploy-bot.python.pkgs.gunicorn];
-  })).dependencyEnv;
+  gunicornPkg = pkgs.deploy-bot.dependencyEnv.override {
+    app = pkgs.deploy-bot.overridePythonAttrs (self: {
+      propagatedBuildInputs = self.propagatedBuildInputs or [] ++ [pkgs.deploy-bot.python.pkgs.gunicorn];
+    });
+  };
 
   binPkgs = with pkgs;
     [ git git-lfs openssh bash ]
