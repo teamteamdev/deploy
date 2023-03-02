@@ -44,7 +44,7 @@ class AfterResponse:
             else:
                 uwsgi.after_req_hook = self._run
 
-            logger.info(f"uWSGI detected, using after_req_hook for AfterResponse, numproc {uwsgi.logsize()}")
+            logger.debug(f"uWSGI detected, using after_req_hook for AfterResponse, numproc {uwsgi.logsize()}")
         else:
             old_app = app.wsgi_app
             def new_wsgi_app(environ, after_response):
@@ -56,7 +56,7 @@ class AfterResponse:
             MAIN_AFTER_RESPONSE_SET = True
 
     def _run(self):
-        logger.info("Running after response hooks")
+        logger.debug("Running after response hooks")
         if hasattr(self.local, "callbacks"):
             for cb in reversed(self.local.callbacks):
                 run_callback(cb)
