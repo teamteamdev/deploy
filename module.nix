@@ -1,20 +1,24 @@
-{ config, pkgs, lib, ... }:
-
-with lib;
-
-let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+with lib; let
   cfg = config.services.deploy-bot;
 
   deployConfig = {
     GITHUB_SECRET = "REPLACE_BY_GITHUB_SECRET";
-    PROJECTS = mapAttrsToList (path: project: {
-      inherit (project) repo branch timeout;
-      inherit path;
-      cmd = pkgs.writeScript "deploy.sh" ''
-        #!${pkgs.stdenv.shell} -e
-        ${project.script}
-      '';
-    }) cfg.projects;
+    PROJECTS =
+      mapAttrsToList (path: project: {
+        inherit (project) repo branch timeout;
+        inherit path;
+        cmd = pkgs.writeScript "deploy.sh" ''
+          #!${pkgs.stdenv.shell} -e
+          ${project.script}
+        '';
+      })
+      cfg.projects;
   };
 
   configFile = pkgs.writeText "config.json" (builtins.toJSON deployConfig);
@@ -26,7 +30,7 @@ let
   };
 
   binPkgs = with pkgs;
-    [ git git-lfs openssh bash ]
+    [git git-lfs openssh bash]
     ++ optional cfg.docker pkgs.docker
     ++ cfg.path;
 
@@ -57,7 +61,6 @@ let
       };
     };
   };
-
 in {
   options = {
     services.deploy-bot = {
@@ -108,13 +111,13 @@ in {
         locations."/".proxyPass = "http://unix:/run/deploy-bot/http.sock";
       };
     };
-  
+
     virtualisation.docker.enable = mkIf cfg.docker true;
 
     systemd.services."deploy-bot" = {
       description = "deploy-bot web service.";
-      wantedBy = [ "multi-user.target" ];
-      path = [ gunicornPkg pkgs.coreutils pkgs.openssh ] ++ binPkgs;
+      wantedBy = ["multi-user.target"];
+      path = [gunicornPkg pkgs.coreutils pkgs.openssh] ++ binPkgs;
       environment = {
         "CONFIG" = "/var/lib/deploy-bot/config.json";
         "NIX_PATH" = concatStringsSep ":" config.nix.nixPath;
