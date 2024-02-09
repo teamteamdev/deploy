@@ -143,6 +143,7 @@ in {
           ssh-keyscan github.com >.ssh/known_hosts 2>/dev/null
         fi
         cp -f "$CREDENTIALS_DIRECTORY/ssh" .ssh/id_rsa
+        chmod 400 .ssh/id_rsa
 
         exec gunicorn -n deploy-bot -w "$(nproc)" -b unix:/run/deploy-bot/http.sock deploy_bot.wsgi:app
       '';
