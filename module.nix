@@ -61,6 +61,8 @@ with lib; let
       };
     };
   };
+
+  maxTimeout = max (mapAttrsToList (proj: proj.timeout) cfg.projects) + 15;
 in {
   options = {
     services.deploy-bot = {
@@ -145,7 +147,7 @@ in {
         cp -f "$CREDENTIALS_DIRECTORY/ssh" .ssh/id_rsa
         chmod 400 .ssh/id_rsa
 
-        exec gunicorn -n deploy-bot -w "$(nproc)" -b unix:/run/deploy-bot/http.sock deploy_bot.wsgi:app
+        exec gunicorn -n deploy-bot -w "$(nproc)" -t ${toString maxTimeout} -b unix:/run/deploy-bot/http.sock deploy_bot.wsgi:app
       '';
     };
 
