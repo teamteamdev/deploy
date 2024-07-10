@@ -62,7 +62,7 @@ with lib; let
     };
   };
 
-  maxTimeout = max (mapAttrsToList (name: proj: proj.timeout) cfg.projects) + 15;
+  maxTimeout = foldr max 0 (mapAttrsToList (name: proj: proj.timeout) cfg.projects) + 15;
 in {
   options = {
     services.deploy-bot = {
