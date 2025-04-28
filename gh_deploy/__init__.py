@@ -5,7 +5,6 @@ import hmac
 import flask
 import os
 import sys
-import contextlib
 import subprocess
 import logging
 import yaml
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def remove_prefix(prefix, str):
     if str.startswith(prefix):
-        return str[len(prefix):]
+        return str[len(prefix) :]
     else:
         return None
 
@@ -55,7 +54,10 @@ def deploy(repository, branch, dir, cmd, timeout):
                 run_command(["git", "checkout", "-B", branch, f"origin/{branch}"], dir)
                 run_command(["git", "lfs", "checkout"], dir)
             else:
-                run_command(["git", "clone", f"git@github.com:{repository}", ".", "-b", branch], dir)
+                run_command(
+                    ["git", "clone", f"git@github.com:{repository}", ".", "-b", branch],
+                    dir,
+                )
                 run_command(["git", "lfs", "install", "--local"], dir)
                 run_command(["git", "lfs", "fetch", "origin", full_branch], dir)
                 run_command(["git", "lfs", "checkout"], dir)
@@ -68,10 +70,10 @@ def deploy(repository, branch, dir, cmd, timeout):
                 run_command(["docker-compose", "restart"], dir, timeout)
             else:
                 logger.error(f"No idea how to deploy project in directory {dir}")
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             raise
             # TODO: notify
-        except subprocess.TimeoutExpired as e:
+        except subprocess.TimeoutExpired:
             raise
             # TODO: notify
     logger.info(f"Successfully deployed {repository}#{branch}")
@@ -100,17 +102,14 @@ def make_app(config_path):
         if action != "push":
             return "OK [skip event]", 200
 
-        signature = remove_prefix("sha1=", flask.request.headers.get("X-Hub-Signature", ""))
+        signature = remove_prefix(
+            "sha1=", flask.request.headers.get("X-Hub-Signature", "")
+        )
         if signature is None:
             return "Bad signature algorithm", 400
 
         if not hmac.compare_digest(
-            signature,
-            hmac.new(
-                secret,
-                flask.request.get_data(),
-                "sha1"
-            ).hexdigest()
+            signature, hmac.new(secret, flask.request.get_data(), "sha1").hexdigest()
         ):
             return "Bad security signature", 403
 
@@ -122,7 +121,7 @@ def make_app(config_path):
         except KeyError:
             return "Missing required fields", 400
 
-        branch = remove_prefix("refs/heads/", data["ref"])
+        branch = remove_prefix("refs/heads/", ref)
         if branch is None:
             return "OK [skip: non-branch push]"
         try:
@@ -132,7 +131,13 @@ def make_app(config_path):
 
         @after_response.once
         def run_deploy():
-            deploy(repository, branch, project["path"], project.get("cmd"), project.get("timeout", default_timeout))
+            deploy(
+                repository,
+                branch,
+                project["path"],
+                project.get("cmd"),
+                project.get("timeout", default_timeout),
+            )
 
         return "OK"
 
@@ -142,7 +147,3 @@ def make_app(config_path):
 def main():
     app = make_app(sys.argv[1])
     app.run()
-
-
-if __name__ == "__main__":
-    main()

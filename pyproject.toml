@@ -1,18 +1,25 @@
-[tool.poetry]
-name="deploy_bot"
+[project]
+name = "gh-deploy"
 version = "1.0"
-description = "[team Team] Deploy System"
-authors = ["team Team <team@teamteam.dev>"]
-packages = [{include = "deploy_bot", from = "src"}]
+description = "GitHub webhook-based deployment system"
+license = "MIT"
+authors = [
+    {name = "[team Team]", email = "team@teamteam.dev"}
+]
+requires-python = ">=3.10"
+dependencies = [
+    "Flask>=2.2.2,<3.0",
+    "PyYAML>=6.0"
+]
 
-[tool.poetry.scripts]
-deploy_bot = "deploy_bot:main"
+[dependency-groups]
+dev = [
+    "ruff>=0.11.7",
+]
 
-[tool.poetry.dependencies]
-python = "^3.7"
-Flask = "^2.2.2"
-PyYAML = "^6.0"
+[project.scripts]
+gh-deploy = "gh_deploy:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"

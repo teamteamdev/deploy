@@ -5,10 +5,10 @@
   ...
 }:
 with lib; let
-  cfg = config.services.deploy-bot;
+  cfg = config.services.gh-deploy;
 
   deployConfig = {
-    GITHUB_SECRET = "REPLACE_BY_GITHUB_SECRET";
+    GITHUB_SECRET = "GITHUB_SECRET_PLACEHOLDER";
     PROJECTS =
       mapAttrsToList (path: project: {
         inherit (project) repo branch timeout;
@@ -23,9 +23,9 @@ with lib; let
 
   configFile = pkgs.writeText "config.json" (builtins.toJSON deployConfig);
 
-  gunicornPkg = pkgs.deploy-bot.dependencyEnv.override {
-    app = pkgs.deploy-bot.overridePythonAttrs (self: {
-      propagatedBuildInputs = self.propagatedBuildInputs or [] ++ [pkgs.deploy-bot.python.pkgs.gunicorn];
+  gunicornPkg = pkgs.gh-deploy.dependencyEnv.override {
+    app = pkgs.gh-deploy.overridePythonAttrs (self: {
+      propagatedBuildInputs = self.propagatedBuildInputs or [] ++ [pkgs.gh-deploy.python.pkgs.gunicorn];
     });
   };
 
@@ -65,8 +65,8 @@ with lib; let
   maxTimeout = foldr max 0 (mapAttrsToList (name: proj: proj.timeout) cfg.projects) + 15;
 in {
   options = {
-    services.deploy-bot = {
-      enable = mkEnableOption "deploy bot";
+    services.gh-deploy = {
+      enable = mkEnableOption "GitHub Deployment System";
 
       docker = mkOption {
         type = types.bool;
@@ -87,7 +87,7 @@ in {
       domain = mkOption {
         type = types.nullOr types.str;
         default = null;
-        description = "Domain name. Nginx is not used if null.";
+        description = "Domain name. Nginx is not used if null (default).";
       };
 
       projects = mkOption {
@@ -110,27 +110,27 @@ in {
       virtualHosts."${cfg.domain}" = {
         forceSSL = true;
         enableACME = true;
-        locations."/".proxyPass = "http://unix:/run/deploy-bot/http.sock";
+        locations."/".proxyPass = "http://unix:/run/gh-deploy/http.sock";
       };
     };
 
     virtualisation.docker.enable = mkIf cfg.docker true;
 
-    systemd.services."deploy-bot" = {
-      description = "deploy-bot web service.";
+    systemd.services."gh-deploy" = {
+      description = "gh-deploy web service.";
       wantedBy = ["multi-user.target"];
       path = [gunicornPkg pkgs.coreutils pkgs.openssh] ++ binPkgs;
       environment = {
-        "CONFIG" = "/var/lib/deploy-bot/config.json";
+        "CONFIG" = "/var/lib/gh-deploy/config.json";
         "NIX_PATH" = concatStringsSep ":" config.nix.nixPath;
       };
       serviceConfig = {
-        User = "deploy-bot";
-        Group = "deploy-bot";
-        RuntimeDirectory = "deploy-bot";
-        StateDirectory = "deploy-bot";
+        User = "gh-deploy";
+        Group = "gh-deploy";
+        RuntimeDirectory = "gh-deploy";
+        StateDirectory = "gh-deploy";
         StateDirectoryMode = "0700";
-        WorkingDirectory = "/var/lib/deploy-bot";
+        WorkingDirectory = "/var/lib/gh-deploy";
         LoadCredential = [
           "secret:${cfg.gitHubSecretFile}"
           "ssh:${cfg.privateKeyFile}"
@@ -138,7 +138,7 @@ in {
       };
       script = ''
         sed \
-          "s,REPLACE_BY_GITHUB_SECRET,$(cat "$CREDENTIALS_DIRECTORY/secret"),g" \
+          "s,GITHUB_SECRET_PLACEHOLDER,$(cat "$CREDENTIALS_DIRECTORY/secret"),g" \
           \${configFile} > config.json
         mkdir -p .ssh
         if [ ! -f .ssh/known_hosts ]; then
@@ -147,18 +147,18 @@ in {
         cp -f "$CREDENTIALS_DIRECTORY/ssh" .ssh/id_rsa
         chmod 400 .ssh/id_rsa
 
-        exec gunicorn -n deploy-bot -w "$(nproc)" -t ${toString maxTimeout} -b unix:/run/deploy-bot/http.sock deploy_bot.wsgi:app
+        exec gunicorn -n gh-deploy -w "$(nproc)" -t ${toString maxTimeout} -b unix:/run/gh-deploy/http.sock gh_deploy.wsgi:app
       '';
     };
 
-    users.extraUsers.deploy-bot = {
+    users.extraUsers.gh-deploy = {
       isSystemUser = true;
-      group = "deploy-bot";
+      group = "gh-deploy";
       createHome = true;
-      home = "/var/lib/deploy-bot";
+      home = "/var/lib/gh-deploy";
       extraGroups = optional cfg.docker "docker";
     };
 
-    users.extraGroups.deploy-bot = {};
+    users.extraGroups.gh-deploy = {};
   };
 }
