@@ -33,7 +33,8 @@
       flake-utils,
       ...
     }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs { inherit system; };
         inherit (nixpkgs) lib;
@@ -54,8 +55,17 @@
                 overlay
               ]
             );
+
         default = pythonSet.mkVirtualEnv "gh-deploy" workspace.deps.default;
-      in {
+      in
+      {
+        overlays.default = overlay;
+        nixosModules.default.imports = [
+          ({pkgs, ...}: {
+            nixpkgs.overlays = [self.overlays.default];
+          })
+          ./module.nix
+        ];
         packages.default = default;
       }
     );
