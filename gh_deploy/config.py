@@ -45,6 +45,7 @@ class Config(BaseModel):
 config: Config
 
 
+# TODO: Refactor this to avoid dirty tricks with config import orders. How?
 def load_config(config_path: Path) -> None:
     with config_path.open() as config_file:
         raw_config = yaml.load(config_file, Loader=yaml.SafeLoader)

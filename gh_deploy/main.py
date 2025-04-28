@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import NoReturn
 
 from .config import load_config
-from .systemd import install, uninstall
 
 
 def main() -> NoReturn:
@@ -16,7 +15,11 @@ def main() -> NoReturn:
     )
     run_command = commands.add_parser("run", help="launch gh-deploy")
     run_command.add_argument(
-        "-c", "--config", type=Path, default=Path("/etc/gh-deploy.yaml"), help="configuration file",
+        "-c",
+        "--config",
+        type=Path,
+        default=Path("/etc/gh-deploy.yaml"),
+        help="configuration file",
     )
     commands.add_parser("install", help="install systemd unit")
     commands.add_parser("uninstall", help="uninstall systemd unit")
@@ -31,8 +34,12 @@ def main() -> NoReturn:
 
             run()
         case "install":
+            from .systemd import install
+
             install()
         case "uninstall":
+            from .systemd import uninstall
+
             uninstall()
 
 
