@@ -32,16 +32,25 @@
       pyproject-build-systems,
       flake-utils,
       ...
-    }:
+    }: let
+      workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+      overlay = workspace.mkPyprojectOverlay {
+          sourcePreference = "wheel";
+        };
+    in {
+      overlays.default = overlay;
+        nixosModules.default.imports = [
+          ({pkgs, ...}: {
+            nixpkgs.overlays = [self.overlays.default];
+          })
+          ./module.nix
+        ];
+    } //
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs { inherit system; };
         inherit (nixpkgs) lib;
-        workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
-        overlay = workspace.mkPyprojectOverlay {
-          sourcePreference = "wheel";
-        };
 
         python = pkgs.python313;
 
@@ -59,13 +68,6 @@
         default = pythonSet.mkVirtualEnv "gh-deploy" workspace.deps.default;
       in
       {
-        overlays.default = overlay;
-        nixosModules.default.imports = [
-          ({pkgs, ...}: {
-            nixpkgs.overlays = [self.overlays.default];
-          })
-          ./module.nix
-        ];
         packages.default = default;
       }
     );
