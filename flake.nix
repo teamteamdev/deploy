@@ -32,45 +32,57 @@
       pyproject-build-systems,
       flake-utils,
       ...
-    }: let
+    }:
+    let
       pythonPkg = "python313";
-    in {
-      overlays.default = (final: prev:
+    in
+    {
+      overlays.default = (
+        final: prev:
         let
           pkgs = import nixpkgs {
             system = final.system;
           };
           lib = nixpkgs.lib;
           python = pkgs."${pythonPkg}";
-        in {
-          gh-deploy = let
-            workspace = uv2nix.lib.workspace.loadWorkspace {
-              workspaceRoot = ./.;
-            };
+        in
+        {
+          gh-deploy =
+            let
+              workspace = uv2nix.lib.workspace.loadWorkspace {
+                workspaceRoot = ./.;
+              };
 
-            overlay = workspace.mkPyprojectOverlay {
-              sourcePreference = "wheel";
-            };
+              overlay = workspace.mkPyprojectOverlay {
+                sourcePreference = "wheel";
+              };
 
-            pythonSet =
-              (pkgs.callPackage pyproject-nix.build.packages {
-                inherit python;
-              }).overrideScope
-                (
-                  lib.composeManyExtensions [
-                    pyproject-build-systems.overlays.default
-                    overlay
-                  ]
-                );
-          in pythonSet.mkVirtualEnv "gh-deploy" workspace.deps.default;
+              pythonSet =
+                (pkgs.callPackage pyproject-nix.build.packages {
+                  inherit python;
+                }).overrideScope
+                  (
+                    lib.composeManyExtensions [
+                      pyproject-build-systems.overlays.default
+                      overlay
+                    ]
+                  );
+            in
+            pythonSet.mkVirtualEnv "gh-deploy" workspace.deps.default;
         }
       );
 
-      nixosModules.default = {
-        nixpkgs.overlays = [ self.overlays.default ];
-      };
-    } //
-    flake-utils.lib.eachDefaultSystem (
+      nixosModules.default.imports = [
+        (
+          { pkgs, ... }:
+          {
+            nixpkgs.overlays = [ self.overlays.default ];
+          }
+        )
+        ./module.nix
+      ];
+    }
+    // flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs {
