@@ -1,39 +1,63 @@
 {
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    pyproject-nix = {
+      url = "github:pyproject-nix/pyproject.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:abbradar/nixpkgs/ugractf";
-    poetry2nix.url = "github:nix-community/poetry2nix";
-    poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
-    alejandra.url = "github:kamadorueda/alejandra";
-    alejandra.inputs.nixpkgs.follows = "nixpkgs";
+
+    uv2nix = {
+      url = "github:pyproject-nix/uv2nix";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    pyproject-build-systems = {
+      url = "github:pyproject-nix/build-system-pkgs";
+      inputs.pyproject-nix.follows = "pyproject-nix";
+      inputs.uv2nix.follows = "uv2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    poetry2nix,
-    flake-utils,
-    alejandra,
-  }:
+  outputs =
     {
-      overlays.default = final: prev: {
-        deploy-bot = final.python3.pkgs.callPackage ./. {};
-      };
+      self,
+      nixpkgs,
+      uv2nix,
+      pyproject-nix,
+      pyproject-build-systems,
+      flake-utils,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+        inherit (nixpkgs) lib;
+        workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+        overlay = workspace.mkPyprojectOverlay {
+          sourcePreference = "wheel";
+        };
 
-      nixosModules.default.imports = [
-        ({pkgs, ...}: {
-          nixpkgs.overlays = [self.overlays.default];
-        })
-        ./module.nix
-      ];
-    }
-    // flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [self.overlays.default alejandra.overlays.default poetry2nix.overlays.default];
-      };
-    in {
-      packages.default = pkgs.deploy-bot;
-      formatter = pkgs.alejandra;
-    });
+        python = pkgs.python313;
+
+        pythonSet =
+          (pkgs.callPackage pyproject-nix.build.packages {
+            inherit python;
+          }).overrideScope
+            (
+              lib.composeManyExtensions [
+                pyproject-build-systems.overlays.default
+                overlay
+              ]
+            );
+        default = pythonSet.mkVirtualEnv "gh-deploy" workspace.deps.default;
+      in {
+        packages.default = default;
+      }
+    );
+
 }

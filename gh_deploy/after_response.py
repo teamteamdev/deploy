@@ -28,6 +28,7 @@ class AfterResponse:
 
             try:
                 import uwsgi
+
                 has_uwsgi = True
             except ImportError:
                 has_uwsgi = False
@@ -37,19 +38,25 @@ class AfterResponse:
         if has_uwsgi:
             if hasattr(uwsgi, "after_req_hook"):
                 old_hook = uwsgi.after_req_hook
+
                 def combined_hook():
                     self._run()
                     old_hook()
+
                 uwsgi.after_req_hook = combined_hook
             else:
                 uwsgi.after_req_hook = self._run
 
-            logger.debug(f"uWSGI detected, using after_req_hook for AfterResponse, numproc {uwsgi.logsize()}")
+            logger.debug(
+                f"uWSGI detected, using after_req_hook for AfterResponse, numproc {uwsgi.logsize()}"
+            )
         else:
             old_app = app.wsgi_app
+
             def new_wsgi_app(environ, after_response):
                 iterator = old_app(environ, after_response)
                 return ClosingIterator(iterator, [self._run])
+
             app.wsgi_app = new_wsgi_app
 
         if is_main:

@@ -1,3 +1,7 @@
 __pycache__/
+.ruff_cache/
 venv/
+.venv/
 deploy.yaml
+/*.egg-info/
+/config.yaml
