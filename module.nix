@@ -152,7 +152,7 @@ in {
         cp -f "$CREDENTIALS_DIRECTORY/ssh" .ssh/id_rsa
         chmod 400 .ssh/id_rsa
 
-        exec ${pkgs.gh-deploy}/bin/gh-deploy run /var/lib/gh-deploy/config.json
+        exec ${pkgs.gh-deploy}/bin/gh-deploy run -c /var/lib/gh-deploy/config.json
       '';
     };
 
