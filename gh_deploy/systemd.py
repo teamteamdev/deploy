@@ -1,5 +1,6 @@
 import grp
 import os
+import pwd
 import subprocess
 import sys
 import tempfile
@@ -13,12 +14,13 @@ def sudo(*args: str, capture_output: bool = False) -> bytes | None:
     return run_command(["sudo", *args], capture_output=capture_output)
 
 
-SYSTEMD_UNIT = f"""[Unit]
+def install() -> None:
+    systemd_unit = f"""[Unit]
 Description=GitHub webhook-based deployment system
 After=network.target
 
 [Service]
-User={os.getlogin()}
+User={pwd.getpwuid(os.geteuid()).pw_name}
 Group={grp.getgrgid(os.getgid()).gr_name}
 WorkingDirectory=/
 ExecStart={sys.executable} -m gh_deploy run
@@ -27,8 +29,6 @@ ExecStart={sys.executable} -m gh_deploy run
 WantedBy=multi-user.target
 """
 
-
-def install() -> None:
     if (
         b"systemd" not in sudo("realpath", "/proc/1/exe", capture_output=True)
         and os.environ.get("FORCE_INSTALL") is None
@@ -42,7 +42,7 @@ def install() -> None:
 
     try:
         with tempfile.NamedTemporaryFile("w", delete_on_close=False) as conf:
-            conf.write(SYSTEMD_UNIT)
+            conf.write(systemd_unit)
         sudo("mv", conf.name, "/lib/systemd/system/gh-deploy.service")
     finally:
         Path(conf.name).unlink(missing_ok=True)
