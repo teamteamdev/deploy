@@ -1,10 +1,9 @@
 import argparse
 import sys
+from pathlib import Path
 from typing import NoReturn
 
-from .app import app
 from .config import load_config
-from .gunicorn import run
 from .systemd import install, uninstall
 
 
@@ -17,7 +16,7 @@ def main() -> NoReturn:
     )
     run_command = commands.add_parser("run", help="launch gh-deploy")
     run_command.add_argument(
-        "-c", "--config", default="/etc/gh-deploy.yaml", help="configuration file"
+        "-c", "--config", type=Path, default=Path("/etc/gh-deploy.yaml"), help="configuration file",
     )
     commands.add_parser("install", help="install systemd unit")
     commands.add_parser("uninstall", help="uninstall systemd unit")
@@ -27,6 +26,9 @@ def main() -> NoReturn:
     match args.command:
         case "run":
             load_config(args.config)
+
+            from .gunicorn import run
+
             run()
         case "install":
             install()
@@ -44,5 +46,7 @@ def debug() -> NoReturn:
             file=sys.stderr,
         )
         load_config("config.yaml")
+
+    from .app import app
 
     app.run(debug=True)
