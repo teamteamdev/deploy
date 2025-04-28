@@ -9,8 +9,8 @@ class Project(BaseModel):
     repo: str
     branch: str
     path: Path
-    cmd: str | None
-    timeout: int | None
+    cmd: str | None = None
+    timeout: int | None = None
 
 
 class TLS(BaseModel):
@@ -21,7 +21,7 @@ class TLS(BaseModel):
 class Config(BaseModel):
     bind: str = "0.0.0.0:8000"
     workers: int = 3
-    tls: TLS | None
+    tls: TLS | None = None
 
     github_secret: str
     default_timeout: int = 120
