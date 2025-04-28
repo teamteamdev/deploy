@@ -10,7 +10,7 @@ with lib; let
   maxTimeout = foldr max 0 (mapAttrsToList (name: proj: proj.timeout) cfg.projects) + 15;
 
   deployConfig = {
-    bind = "unix:/run/deploy-bot/http.sock";
+    bind = "unix:/run/gh-deploy/http.sock";
     github_secret = "GITHUB_SECRET_PLACEHOLDER";
     default_timeout = maxTimeout;
 
