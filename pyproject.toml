@@ -8,8 +8,10 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "Flask>=2.2.2,<3.0",
-    "PyYAML>=6.0"
+    "Flask>=3.1.0",
+    "gunicorn>=23.0.0",
+    "pydantic>=2.11.3",
+    "PyYAML>=6.0",
 ]
 
 [dependency-groups]
@@ -18,8 +20,20 @@ dev = [
 ]
 
 [project.scripts]
-gh-deploy = "gh_deploy:main"
+gh-deploy = "gh_deploy.main:main"
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN204", "B019", "COM812",
+    "D100", "D101", "D102", "D103", "D104", "D106", "D107", "D203", "D213",
+    "EM101",
+    "FIX002",
+    "PLR0911", "PLW0603",
+    "S104", "S106", "S603", "S604",
+    "T201", "TD002", "TD003", "TRY003",
+]
