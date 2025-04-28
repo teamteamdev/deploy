@@ -1,4 +1,4 @@
-from functools import lru_cache
+from functools import cached_property
 from pathlib import Path
 
 import yaml
@@ -30,16 +30,15 @@ class Config(BaseModel):
 
     projects: list[Project] = []
 
-    @lru_cache
+    @cached_property
     def project_map(self) -> dict[tuple[str, str], Project]:
         return {
             (project.repo.lower(), project.branch.lower()): project
             for project in self.projects
         }
 
-    @lru_cache
     def project(self, repo: str, branch: str) -> Project | None:
-        return self.project_map().get((repo.lower(), branch.lower()))
+        return self.project_map.get((repo.lower(), branch.lower()))
 
 
 config: Config
