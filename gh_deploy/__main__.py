@@ -1,4 +1,4 @@
-from . import main
+from .main import debug
 
 if __name__ == "__main__":
-    main()
+    debug()

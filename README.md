@@ -2,49 +2,72 @@
 
 ## Setup
 
-1. Clone this repository to the target server
-2. [Optional] Create virtual environment: `virtualenv venv`
-3. [Optional] Activate it: `source venv/bin/activate`
-4. Install dependencies: `pip install -r requirements.txt`
-5. Edit `example.service` and move it to your systemd folder
-   
-   For example, the path for Ubuntu 18.04 is `/etc/systemd/system/deploy.service`.
+### Systems with systemd
 
-   You should specify path to your folder and user which has both ability to read from remote repositories as well as privileges to write to projects' folders.
-6. Reload systemd daemon: `systemctl daemon-reload` (as root)
-7. Start service: `service deploy start` (as root)
-8. Enable startup on boot: `systemctl enable deploy` (as root)
+You need:
 
-## Add project
+1. Git
+2. Git LFS if you want to use it
+3. Your current user should be able to fetch all repositories you need via SSH
+4. Execute `ssh-keyscan github.com > ~/.ssh/known_hosts`
 
-You should put configuration file `deploy.yaml` in project folder to setup deploy configuration. Its root element is a dictionary containing these properties:
+We recommend to use [uv](https://docs.astral.sh/uv/), but you can use whatever you want.
 
-* `secret` — required — GitHub webhook secret
-* `bind` — required — host and port to listen on
+1. Fetch the package: `uv tool install git+https://github.com/teamteamdev/deploy.git`.
 
-  > **Note**: Deploy System doesn't support HTTPS protocol. Use Nginx for reverse-proxying. Sample config is provided in `example.nginx.conf`.
-* `projects` — required — list of `Project` objects
+2. Install systemd unit: `gh-deploy install` (**do not** run it as `sudo`, it will elevate itself).
 
-### Project
+3. Put the configuration to `/etc/gh-deploy.yaml`.
 
-* `repo` — required — full repository name
-* `branch` — optional, defaults to `master` — branch name
-* `path` — required — location of the project on your drive
-* `script` — optional — bash command to redeploy the project
+### NixOS
+
+Use `flake.nix`. It exports NixOS module you need. Probably it will not work.
+
+### Something else
+
+`uv` should also fetch `gh-deploy` for you. Start app via `gh-deploy run /path/to/config.yaml`
+
+## Configuration
+
+Sample `config.yaml`:
+
+```yaml
+bind: "0.0.0.0:8000"  # (default) or unix:///var/run/gh-deploy.sock
+workers: 3            # (default)
+tls:                  # (default is HTTP, see below)
+  key: /path/to/domain.key
+  cert: /path/to/domain.crt
+
+github_secret: "same-thing-as-in-github-webhook-settings"
+default_timeout: 120  # (default) in seconds
+use_lfs: false        # (default)
+
+projects:
+  # You can use as many projects as you want, but different deploy scripts
+  # for the same repo+branch are not allowed
+  - repo: teamteamdev/kyzylborda
+    branch: production
+    path: /opt/kyzylborda
+    cmd: systemctl reload kyzylborda
+
+    timeout: 240      # (optional, default is `default_timeout`)
+```
+
+> [!NOTE] Though Deploy supports HTTPS out of the box, we recommend to use
+> some reverse proxy (Nginx, HAProxy, …).
 
 ## GitHub configuration
 
-Open **Webhooks** tab in repository or organization settings, setup new webhook. Send only `push` events. By default, Deploy System listens on `/`.
+Open **Webhooks** tab in repository or organization settings, setup new webhook. Send only `push` events.
+
+URL should be `https://your-host:your-port/`. Secret should be same as `github_secret` in config.
 
 ## Deployment process
 
-* If `script` is provided in configuration file, it will be started to deploy new version
+* If `cmd` is provided in configuration file, it will be started to deploy new version
 * Otherwise, if `deploy.sh` exists in the project root, it will be started
 * Otherwise, Deploy System will execute `docker-compose restart`
 
 ## TODOs
 
-1. Implement Telegram notifications on pushes
-2. Send HTTP response asynchronously
-3. ???
-4. PROFIT!!!!
+[ ] Implement Telegram notifications on pushes

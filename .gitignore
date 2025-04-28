@@ -4,4 +4,5 @@ venv/
 .venv/
 deploy.yaml
 /*.egg-info/
+/dist/
 /config.yaml

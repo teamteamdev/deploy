@@ -7,9 +7,16 @@
 with lib; let
   cfg = config.services.gh-deploy;
 
+  maxTimeout = foldr max 0 (mapAttrsToList (name: proj: proj.timeout) cfg.projects) + 15;
+
   deployConfig = {
-    GITHUB_SECRET = "GITHUB_SECRET_PLACEHOLDER";
-    PROJECTS =
+    bind = "unix:/run/deploy-bot/http.sock";
+    github_secret = "GITHUB_SECRET_PLACEHOLDER";
+    default_timeout = maxTimeout;
+
+    use_lfs = cfg.lfs;
+
+    projects =
       mapAttrsToList (path: project: {
         inherit (project) repo branch timeout;
         inherit path;
@@ -23,15 +30,10 @@ with lib; let
 
   configFile = pkgs.writeText "config.json" (builtins.toJSON deployConfig);
 
-  # gunicornPkg = pkgs.gh-deploy.dependencyEnv.override {
-  #   app = pkgs.gh-deploy.overridePythonAttrs (self: {
-  #     propagatedBuildInputs = self.propagatedBuildInputs or [] ++ [pkgs.gh-deploy.python.pkgs.gunicorn];
-  #   });
-  # };
-
   binPkgs = with pkgs;
-    [git git-lfs openssh bash pkgs.python313Packages.gunicorn]
+    [git openssh bash]
     ++ optional cfg.docker pkgs.docker
+    ++ optional cfg.lfs pkgs.git-lfs
     ++ cfg.path;
 
   projectOpts = {
@@ -61,8 +63,6 @@ with lib; let
       };
     };
   };
-
-  maxTimeout = foldr max 0 (mapAttrsToList (name: proj: proj.timeout) cfg.projects) + 15;
 in {
   options = {
     services.gh-deploy = {
@@ -72,6 +72,12 @@ in {
         type = types.bool;
         default = true;
         description = "Enable Docker support.";
+      };
+
+      lfs = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable Git LFS support.";
       };
 
       privateKeyFile = mkOption {
@@ -119,9 +125,8 @@ in {
     systemd.services."gh-deploy" = {
       description = "gh-deploy web service.";
       wantedBy = ["multi-user.target"];
-      path = [pkgs.python313Packages.gunicorn pkgs.coreutils pkgs.openssh] ++ binPkgs;
+      path = [pkgs.coreutils pkgs.openssh] ++ binPkgs;
       environment = {
-        "CONFIG" = "/var/lib/gh-deploy/config.json";
         "NIX_PATH" = concatStringsSep ":" config.nix.nixPath;
       };
       serviceConfig = {
@@ -147,7 +152,7 @@ in {
         cp -f "$CREDENTIALS_DIRECTORY/ssh" .ssh/id_rsa
         chmod 400 .ssh/id_rsa
 
-        exec gunicorn -n gh-deploy -w "$(nproc)" -t ${toString maxTimeout} -b unix:/run/gh-deploy/http.sock gh_deploy.wsgi:app
+        exec ${pkgs.gh-deploy}/bin/gh-deploy run /var/lib/gh-deploy/config.json
       '';
     };
 
