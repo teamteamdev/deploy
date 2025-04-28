@@ -33,42 +33,64 @@
       flake-utils,
       ...
     }: let
-      workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
-      overlay = workspace.mkPyprojectOverlay {
-          sourcePreference = "wheel";
-        };
+      pythonPkg = "python313";
     in {
-      overlays.default = overlay;
-        nixosModules.default.imports = [
-          ({pkgs, ...}: {
-            nixpkgs.overlays = [self.overlays.default];
-          })
-          ./module.nix
-        ];
+      overlays.default = (final: prev:
+        let
+          pkgs = import nixpkgs {
+            system = final.system;
+          };
+          lib = nixpkgs.lib;
+          python = pkgs."${pythonPkg}";
+        in {
+          gh-deploy = let
+            workspace = uv2nix.lib.workspace.loadWorkspace {
+              workspaceRoot = ./.;
+            };
+
+            overlay = workspace.mkPyprojectOverlay {
+              sourcePreference = "wheel";
+            };
+
+            pythonSet =
+              (pkgs.callPackage pyproject-nix.build.packages {
+                inherit python;
+              }).overrideScope
+                (
+                  lib.composeManyExtensions [
+                    pyproject-build-systems.overlays.default
+                    overlay
+                  ]
+                );
+          in pythonSet.mkVirtualEnv "gh-deploy" workspace.deps.default;
+        }
+      );
+
+      nixosModules.default = {
+        nixpkgs.overlays = [ self.overlays.default ];
+      };
     } //
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
-        inherit (nixpkgs) lib;
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
+        };
 
-        python = pkgs.python313;
-
-        pythonSet =
-          (pkgs.callPackage pyproject-nix.build.packages {
-            inherit python;
-          }).overrideScope
-            (
-              lib.composeManyExtensions [
-                pyproject-build-systems.overlays.default
-                overlay
-              ]
-            );
-
-        default = pythonSet.mkVirtualEnv "gh-deploy" workspace.deps.default;
+        python = pkgs."${pythonPkg}";
       in
       {
-        packages.default = default;
+        packages.default = pkgs.gh-deploy;
+        formatter = pkgs.nixfmt-rfc-style;
+        devShells.default = pkgs.mkShell {
+          packages = [
+            python
+            pkgs.uv
+            pkgs.nixfmt-rfc-style
+            pkgs.ruff
+          ];
+        };
       }
     );
 
