@@ -23,14 +23,14 @@ with lib; let
 
   configFile = pkgs.writeText "config.json" (builtins.toJSON deployConfig);
 
-  gunicornPkg = pkgs.gh-deploy.dependencyEnv.override {
-    app = pkgs.gh-deploy.overridePythonAttrs (self: {
-      propagatedBuildInputs = self.propagatedBuildInputs or [] ++ [pkgs.gh-deploy.python.pkgs.gunicorn];
-    });
-  };
+  # gunicornPkg = pkgs.gh-deploy.dependencyEnv.override {
+  #   app = pkgs.gh-deploy.overridePythonAttrs (self: {
+  #     propagatedBuildInputs = self.propagatedBuildInputs or [] ++ [pkgs.gh-deploy.python.pkgs.gunicorn];
+  #   });
+  # };
 
   binPkgs = with pkgs;
-    [git git-lfs openssh bash]
+    [git git-lfs openssh bash pkgs.python313Packages.gunicorn]
     ++ optional cfg.docker pkgs.docker
     ++ cfg.path;
 
@@ -119,7 +119,7 @@ in {
     systemd.services."gh-deploy" = {
       description = "gh-deploy web service.";
       wantedBy = ["multi-user.target"];
-      path = [gunicornPkg pkgs.coreutils pkgs.openssh] ++ binPkgs;
+      path = [pkgs.python313Packages.gunicorn pkgs.coreutils pkgs.openssh] ++ binPkgs;
       environment = {
         "CONFIG" = "/var/lib/gh-deploy/config.json";
         "NIX_PATH" = concatStringsSep ":" config.nix.nixPath;
