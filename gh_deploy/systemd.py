@@ -24,6 +24,7 @@ User={pwd.getpwuid(os.geteuid()).pw_name}
 Group={grp.getgrgid(os.getgid()).gr_name}
 WorkingDirectory=/
 ExecStart={sys.executable} -m gh_deploy run
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target

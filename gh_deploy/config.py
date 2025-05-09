@@ -1,4 +1,4 @@
-from functools import cached_property
+from functools import cached_property, lru_cache
 from pathlib import Path
 
 import yaml
@@ -41,13 +41,24 @@ class Config(BaseModel):
         return self.project_map.get((repo.lower(), branch.lower()))
 
 
-config: Config
+_config_path: Path | None = None
 
 
-# TODO: Refactor this to avoid dirty tricks with config import orders. How?
-def load_config(config_path: Path) -> None:
-    with config_path.open() as config_file:
+def set_config_path(config_path: str) -> None:
+    global _config_path
+    _config_path = Path(config_path)
+
+
+@lru_cache
+def get_config() -> Config:
+    if _config_path is None:
+        raise ValueError(
+            "Configuration path is not set. Use set_config_path to initialize it."
+        )
+
+    with _config_path.open() as config_file:
         raw_config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    return Config(**raw_config)
 
-    global config
-    config = Config(**raw_config)
+
+__all__ = ["get_config", "set_config_path"]

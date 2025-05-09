@@ -4,16 +4,20 @@ from typing import NoReturn
 import gunicorn.app.base
 
 from .app import app
-from .config import config
+from .config import get_config
 
 
 class Application(gunicorn.app.base.BaseApplication):
     def __init__(self):
-        self.options = {"bind": config.bind, "workers": config.workers}
+        self.options = {
+            "bind": get_config().bind,
+            "workers": get_config().workers,
+            "worker_class": "uvicorn.workers.UvicornWorker",
+        }
 
-        if config.tls:
-            self.options["keyfile"] = str(config.tls.key)
-            self.options["certfile"] = str(config.tls.cert)
+        if get_config().tls:
+            self.options["keyfile"] = str(get_config().tls.key)
+            self.options["certfile"] = str(get_config().tls.cert)
 
         self.application = app
         super().__init__()
