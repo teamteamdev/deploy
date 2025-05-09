@@ -53,7 +53,8 @@ projects:
     timeout: 240      # (optional, default is `default_timeout`)
 ```
 
-> [!NOTE] Though Deploy supports HTTPS out of the box, we recommend to use
+> [!NOTE]
+> Though Deploy supports HTTPS out of the box, we recommend to use
 > some reverse proxy (Nginx, HAProxy, …).
 
 ## GitHub configuration
@@ -70,4 +71,4 @@ URL should be `https://your-host:your-port/`. Secret should be same as `github_s
 
 ## TODOs
 
-[ ] Implement Telegram notifications on pushes
+- [ ] Implement Telegram notifications on pushes
