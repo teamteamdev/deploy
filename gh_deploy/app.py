@@ -1,56 +1,63 @@
 import hmac
+import json
 import logging
 
-import flask
+from starlette.applications import Starlette
+from starlette.background import BackgroundTask
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse, Response
+from starlette.routing import Route
 
-from .after_response import AfterResponse
-from .config import config
+from .config import get_config
 from .deploy import deploy
 from .util import remove_prefix
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = flask.Flask(__name__)
-after_response = AfterResponse(app)
 
-
-@app.route("/", methods=["POST"])
-def hook() -> str:
-    action = flask.request.headers.get("X-GitHub-Event", "")
+async def hook(request: Request) -> Response:
+    action = request.headers.get("X-GitHub-Event", "")
     if action != "push":
-        return "OK [skip event]", 200
+        return PlainTextResponse("OK [skip event]", status_code=200)
 
-    signature = remove_prefix("sha1=", flask.request.headers.get("X-Hub-Signature", ""))
+    signature = remove_prefix("sha1=", request.headers.get("X-Hub-Signature", ""))
     if signature is None:
-        return "Bad signature algorithm", 400
+        return PlainTextResponse("Bad signature algorithm", status_code=400)
+
+    body = await request.body()
 
     if not hmac.compare_digest(
         signature,
-        hmac.new(
-            config.github_secret.encode(), flask.request.get_data(), "sha1"
-        ).hexdigest(),
+        hmac.new(get_config().github_secret.encode(), body, "sha1").hexdigest(),
     ):
-        return "Bad security signature", 403
+        return PlainTextResponse("Bad security signature", status_code=403)
 
-    data = flask.request.json
+    data = json.loads(body)
 
     try:
         repository = data["repository"]["full_name"]
         ref = data["ref"]
     except KeyError:
-        return "Missing required fields", 400
+        return PlainTextResponse("Missing required fields", status_code=400)
 
     branch = remove_prefix("refs/heads/", ref)
     if branch is None:
-        return "OK [skip: non-branch push]"
+        return PlainTextResponse("OK [skip: non-branch push]")
 
-    project = config.project(repository, branch)
+    project = get_config().project(repository, branch)
     if project is None:
-        return "OK [skip: no deploy action]"
+        return PlainTextResponse("OK [skip: no deploy action]")
 
-    @after_response.once
-    def run_deploy() -> None:
-        deploy(project, use_lfs=config.use_lfs, default_timeout=config.default_timeout)
+    return PlainTextResponse(
+        "OK",
+        background=BackgroundTask(
+            deploy,
+            project,
+            use_lfs=get_config().use_lfs,
+            default_timeout=get_config().default_timeout,
+        ),
+    )
 
-    return "OK"
+
+app = Starlette(routes=[Route("/", hook, methods=["POST"], name="hook")])

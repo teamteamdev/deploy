@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
-from .config import load_config
+from .config import get_config, set_config_path
+from .util import remove_prefix
 
 
 def main() -> NoReturn:
@@ -28,7 +29,7 @@ def main() -> NoReturn:
 
     match args.command:
         case "run":
-            load_config(args.config)
+            set_config_path(args.config)
 
             from .gunicorn import run
 
@@ -45,15 +46,30 @@ def main() -> NoReturn:
 
 def debug() -> NoReturn:
     if len(sys.argv) > 1:
-        load_config(sys.argv[1])
+        set_config_path(sys.argv[1])
     else:
         print(
             "[!] Config not provided, loading `config.yaml`.",
             "Pass correct location as first argument.",
             file=sys.stderr,
         )
-        load_config("config.yaml")
+        set_config_path("config.yaml")
 
-    from .app import app
+    import uvicorn
 
-    app.run(debug=True)
+    bind = get_config().bind
+    uv_bind = {}
+    if (fd := remove_prefix(bind, "fd://")) is not None:
+        uv_bind["fd"] = int(fd)
+    elif (uds := remove_prefix(bind, "unix:")) is not None:
+        uv_bind["uds"] = uds
+    elif ":" in bind:
+        host, port = bind.split(":")
+        uv_bind["host"], uv_bind["port"] = host, int(port)
+    elif bind.isdigit():
+        uv_bind["port"] = int(bind)
+    else:
+        error = f"Unsupported bind target: {bind}"
+        raise ValueError(error)
+
+    uvicorn.run("gh_deploy.app:app", **uv_bind, reload=True)
