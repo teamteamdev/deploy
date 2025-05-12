@@ -42,7 +42,7 @@ WantedBy=multi-user.target
         os.exit(1)
 
     try:
-        with tempfile.NamedTemporaryFile("w", delete_on_close=False) as conf:
+        with tempfile.NamedTemporaryFile("w", delete=False) as conf:
             conf.write(systemd_unit)
         sudo("mv", conf.name, "/lib/systemd/system/gh-deploy.service")
     finally:
