@@ -24,6 +24,9 @@ User={pwd.getpwuid(os.geteuid()).pw_name}
 Group={grp.getgrgid(os.getgid()).gr_name}
 WorkingDirectory=/
 ExecStart={sys.executable} -m gh_deploy run
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+Restart=on-failure
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
