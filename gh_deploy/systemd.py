@@ -6,7 +6,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from .util import run_command
+from gh_deploy.util import run_command
 
 
 def sudo(*args: str, capture_output: bool = False) -> bytes | None:

@@ -3,8 +3,8 @@ from typing import NoReturn
 
 import gunicorn.app.base
 
-from .app import app
-from .config import get_config
+from gh_deploy.app import app
+from gh_deploy.config import get_config
 
 
 class Application(gunicorn.app.base.BaseApplication):

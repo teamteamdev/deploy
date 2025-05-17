@@ -8,9 +8,9 @@ from starlette.requests import Request
 from starlette.responses import PlainTextResponse, Response
 from starlette.routing import Route
 
-from .config import get_config
-from .deploy import deploy
-from .util import remove_prefix
+from gh_deploy.config import get_config
+from gh_deploy.deploy import deploy
+from gh_deploy.util import remove_prefix
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ async def hook(request: Request) -> Response:
 
     if not hmac.compare_digest(
         signature,
-        hmac.new(get_config().github_secret.encode(), body, "sha1").hexdigest(),
+        hmac.new(get_config().webhook_secret.encode(), body, "sha1").hexdigest(),
     ):
         return PlainTextResponse("Bad security signature", status_code=403)
 
@@ -54,7 +54,7 @@ async def hook(request: Request) -> Response:
         background=BackgroundTask(
             deploy,
             project,
-            use_lfs=get_config().use_lfs,
+            use_lfs=get_config().git.use_lfs,
             default_timeout=get_config().default_timeout,
         ),
     )

@@ -5,8 +5,8 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from .config import Project
-from .util import run_command
+from gh_deploy.config import GitHttpSettings, Project, get_config
+from gh_deploy.util import run_command
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,15 @@ def lock_directory(path: Path) -> Generator[None]:
     with (absolute.parent / f".{path.name}-lock").open("w") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         yield
+
+
+def clone_url(project: Project) -> str:
+    settings = get_config().git
+
+    if isinstance(settings, GitHttpSettings):
+        return f"https://{settings.username}:{settings.password}@github.com/{project.repo}"
+
+    return f"git@gitub.com:{project.repo}"
 
 
 def deploy(project: Project, *, use_lfs: bool, default_timeout: int) -> None:
@@ -37,7 +46,7 @@ def deploy(project: Project, *, use_lfs: bool, default_timeout: int) -> None:
                     [
                         "git",
                         "clone",
-                        f"git@github.com:{project.repo}",
+                        clone_url(project),
                         ".",
                         "-b",
                         project.branch,
