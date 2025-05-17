@@ -1,8 +1,9 @@
 from functools import cached_property, lru_cache
 from pathlib import Path
+from typing import Literal
 
 import yaml
-from pydantic import BaseModel, FilePath
+from pydantic import BaseModel, Field, FilePath
 
 
 class Project(BaseModel):
@@ -18,17 +19,32 @@ class TLS(BaseModel):
     cert: FilePath
 
 
+class GitHttpSettings(BaseModel):
+    type: Literal["https"] = "https"
+    username: str
+    password: str
+    use_lfs: bool = False
+
+
+class GitSSHSettings(BaseModel):
+    type: Literal["ssh"] = "ssh"
+    use_lfs: bool = False
+
+
 class Config(BaseModel):
     bind: str = "0.0.0.0:8000"
     workers: int = 3
     tls: TLS | None = None
 
-    github_secret: str
+    git: GitHttpSettings | GitSSHSettings = Field(
+        discriminator="type", default=GitSSHSettings()
+    )
+
+    webhook_secret: str
+
     default_timeout: int = 120
 
-    use_lfs: bool = False
-
-    projects: list[Project] = []
+    projects: list[Project]
 
     @cached_property
     def project_map(self) -> dict[tuple[str, str], Project]:

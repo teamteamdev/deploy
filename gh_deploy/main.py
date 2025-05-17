@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
-from .config import get_config, set_config_path
-from .util import remove_prefix
+from gh_deploy.config import get_config, set_config_path
+from gh_deploy.util import remove_prefix
 
 
 def main() -> NoReturn:
@@ -31,15 +31,15 @@ def main() -> NoReturn:
         case "run":
             set_config_path(args.config)
 
-            from .gunicorn import run
+            from gh_deploy.gunicorn import run
 
             run()
         case "install":
-            from .systemd import install
+            from gh_deploy.systemd import install
 
             install()
         case "uninstall":
-            from .systemd import uninstall
+            from gh_deploy.systemd import uninstall
 
             uninstall()
 

@@ -38,13 +38,17 @@ tls:                  # (default is HTTP, see below)
   key: /path/to/domain.key
   cert: /path/to/domain.crt
 
-github_secret: "same-thing-as-in-github-webhook-settings"
+webhook_secret: "same-thing-as-in-github-webhook-settings"
 default_timeout: 120  # (default) in seconds
-use_lfs: false        # (default)
+
+git:
+  method: ssh         # (default, also http is supported)
+  # username: ...     # (required for "http" method)
+  # password: ...
+  use_lfs: false      # (default)
 
 projects:
-  # You can use as many projects as you want, but different deploy scripts
-  # for the same repo+branch are not allowed
+  # All (repo, branch) pairs should be unique
   - repo: teamteamdev/kyzylborda
     branch: production
     path: /opt/kyzylborda

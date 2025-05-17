@@ -7,14 +7,23 @@
 with lib; let
   cfg = config.services.gh-deploy;
 
+  isGitHttp = cfg.http != null;
+  isGitSsh = cfg.ssh != null;
+
   maxTimeout = foldr max 0 (mapAttrsToList (name: proj: proj.timeout) cfg.projects) + 15;
 
   deployConfig = {
     bind = "unix:/run/gh-deploy/http.sock";
-    github_secret = "GITHUB_SECRET_PLACEHOLDER";
+    webhook_secret = "GITHUB_WEBHOOK_SECRET_PLACEHOLDER";
     default_timeout = maxTimeout;
 
-    use_lfs = cfg.lfs;
+    git = {
+      type = if isGitHttp then "http" else "ssh";
+      use_lfs = cfg.lfs;
+    } // lib.attrsets.optionalAttrs isGitHttp {
+      inherit (cfg.git) username;
+      password = "PASSWORD_PLACEHOLDER";
+    };
 
     projects =
       mapAttrsToList (path: project: {
@@ -31,7 +40,8 @@ with lib; let
   configFile = pkgs.writeText "config.json" (builtins.toJSON deployConfig);
 
   binPkgs = with pkgs;
-    [git openssh bash]
+    [git bash]
+    ++ optional isGitSsh pkgs.openssh
     ++ optional cfg.docker pkgs.docker
     ++ optional cfg.lfs pkgs.git-lfs
     ++ cfg.path;
@@ -63,7 +73,8 @@ with lib; let
       };
     };
   };
-in {
+in
+{
   options = {
     services.gh-deploy = {
       enable = mkEnableOption "GitHub Deployment System";
@@ -74,20 +85,43 @@ in {
         description = "Enable Docker support.";
       };
 
+      ssh = mkOption {
+        type = types.nullOr (types.submodule {
+          options = {
+            privateKeyFile = mkOption {
+              type = types.path;
+              description = "Path to private key file.";
+            };
+          };
+        });
+        description = "Options for SSH transport.";
+        default = null;
+      };
+
+      http = mkOption {
+        type = types.nullOr (types.submodule {
+          username = mkOption {
+            type = types.str;
+            description = "Username for HTTP basic authentication.";
+          };
+          passwordFile = mkOption {
+            type = types.path;
+            description = "Path to password for HTTP basic authentication.";
+          };
+        });
+        description = "Options for HTTP transport.";
+        default = null;
+      };
+
       lfs = mkOption {
         type = types.bool;
         default = true;
         description = "Enable Git LFS support.";
       };
 
-      privateKeyFile = mkOption {
+      webhookSecretFile = mkOption {
         type = types.path;
-        description = "Path to private key file.";
-      };
-
-      gitHubSecretFile = mkOption {
-        type = types.path;
-        description = "Path to Github secret file.";
+        description = "Path to Github webhook secret file.";
       };
 
       domain = mkOption {
@@ -125,7 +159,7 @@ in {
     systemd.services."gh-deploy" = {
       description = "gh-deploy web service.";
       wantedBy = ["multi-user.target"];
-      path = [pkgs.coreutils pkgs.openssh] ++ binPkgs;
+      path = [pkgs.coreutils] ++ binPkgs;
       environment = {
         "NIX_PATH" = concatStringsSep ":" config.nix.nixPath;
       };
@@ -137,23 +171,28 @@ in {
         StateDirectoryMode = "0700";
         WorkingDirectory = "/var/lib/gh-deploy";
         LoadCredential = [
-          "secret:${cfg.gitHubSecretFile}"
-          "ssh:${cfg.privateKeyFile}"
-        ];
+          "webhook_secret:${cfg.webhookSecretFile}"
+        ] ++ lib.optional isGitSsh "ssh:${cfg.ssh.privateKeyFile}"
+          ++ lib.optional isGitHttp "password:${cfg.http.passwordFile}";
       };
-      script = ''
+      script = concatStrings ([''
         sed \
-          "s,GITHUB_SECRET_PLACEHOLDER,$(cat "$CREDENTIALS_DIRECTORY/secret"),g" \
+          "s,GITHUB_WEBHOOK_SECRET_PLACEHOLDER,$(cat "$CREDENTIALS_DIRECTORY/webhook_secret"),g" \
           \${configFile} > config.json
+      ''] ++ lib.optional isGitSsh ''
         mkdir -p .ssh
         if [ ! -f .ssh/known_hosts ]; then
           ssh-keyscan github.com >.ssh/known_hosts 2>/dev/null
         fi
         cp -f "$CREDENTIALS_DIRECTORY/ssh" .ssh/id_rsa
         chmod 400 .ssh/id_rsa
-
+      '' ++ lib.optional isGitHttp ''
+        sed \
+          "s,PASSWORD_PLACEHOLDER,$(cat "$CREDENTIALS_DIRECTORY/password"),g" \
+          \${configFile} > config.json
+      '' ++ [''
         exec ${pkgs.gh-deploy}/bin/gh-deploy run -c /var/lib/gh-deploy/config.json
-      '';
+      '']);
     };
 
     users.extraUsers.gh-deploy = {
