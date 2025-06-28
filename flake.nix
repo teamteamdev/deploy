@@ -73,13 +73,7 @@
       );
 
       nixosModules.default.imports = [
-        (
-          { pkgs, ... }:
-          {
-            nixpkgs.overlays = [ self.overlays.default ];
-          }
-        )
-        ./module.nix
+        (import ./module.nix self.packages)
       ];
     }
     // flake-utils.lib.eachDefaultSystem (
@@ -93,8 +87,11 @@
         python = pkgs."${pythonPkg}";
       in
       {
-        packages.default = pkgs.gh-deploy;
-        formatter = pkgs.nixfmt-rfc-style;
+        packages = {
+          default = pkgs.gh-deploy;
+          gh-deploy = pkgs.gh-deploy;
+        };
+        formatter = pkgs.nixfmt-tree;
         devShells.default = pkgs.mkShell {
           packages = [
             python
